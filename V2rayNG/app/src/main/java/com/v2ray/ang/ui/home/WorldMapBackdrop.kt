@@ -119,7 +119,7 @@ internal fun WorldMapBackdrop(point: Pair<Float, Float>?, modifier: Modifier = M
         // ~60% of the world across the screen; dot centred horizontally, in the upper band above the orb.
         val s = size.width * 1.65f / mw * (0.96f + 0.04f * a)
         val tx = (size.width / 2f - px * s).coerceIn(size.width - mw * s, 0f)
-        val ty = size.height * 0.16f - py * s
+        val ty = size.height * 0.075f - py * s
         withTransform({ translate(tx, ty); scale(s, s, Offset.Zero) }) {
             drawPath(path, ink.copy(alpha = landAlpha * a))
         }

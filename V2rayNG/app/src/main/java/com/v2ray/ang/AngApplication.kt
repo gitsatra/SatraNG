@@ -7,6 +7,7 @@ import androidx.work.Configuration
 import androidx.work.WorkManager
 import com.v2ray.ang.AppConfig.ANG_PACKAGE
 import com.v2ray.ang.handler.AppLocaleManager
+import com.v2ray.ang.handler.HybridUsageTracker
 import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.handler.SettingsManager
 import com.v2ray.ang.ui.compose.ThemeManager
@@ -34,6 +35,9 @@ class AngApplication : Application() {
      */
     override fun onCreate() {
         super.onCreate()
+        // Go runtime (Xray) reads these when libgojni loads: a soft heap cap keeps RSS flat on
+        // long sessions without raising GC frequency at normal load (GOGC stays default).
+        runCatching { android.system.Os.setenv("GOMEMLIMIT", "96MiB", false) }
 
         MmkvManager.initialize(this)
 
@@ -45,7 +49,15 @@ class AngApplication : Application() {
         // Ensure critical preference defaults are present in MMKV early
         SettingsManager.initApp(this)
 
+        // Every process (:daemon, :tasks, :bg) runs onCreate; schedule periodic work once, from the UI process.
+        if (isMainProcess()) HybridUsageTracker.schedulePeriodicSync(this)
+
         // Initialize theme state from MMKV
         ThemeManager.refresh()
+
+        if (isMainProcess()) Thread { runCatching { com.v2ray.ang.core.ToggleSurfaces.publishShortcuts(this) } }.apply { priority = Thread.MIN_PRIORITY }.start()
     }
+
+    private fun isMainProcess(): Boolean =
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) getProcessName() == packageName else true
 }

@@ -54,6 +54,7 @@ object LogUtil {
 
     private fun log(priority: Int, tag: String, message: String, throwable: Throwable? = null) {
         if (!isEnabled(priority)) return
+        @Suppress("NAME_SHADOWING") val message = LogRedactor.redact(message)
 
         when {
             throwable == null -> Log.println(priority, tag, message)

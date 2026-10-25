@@ -1,6 +1,104 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name" translatable="false">v2rayNG</string>
+    <string name="app_name" translatable="false">SatraNG</string>
+    <string name="satra_status_connected">متصل</string>
+    <string name="satra_status_ready">آماده اتصال</string>
+    <string name="satra_status_connecting">در حال اتصال…</string>
+    <string name="satra_brand_tagline">مسیر امن، سیگنال شفاف</string>
+    <string name="satra_nav_home">خانه</string>
+    <string name="satra_nav_locations">لوکیشن‌ها</string>
+    <string name="satra_nav_subs">اشتراک‌ها</string>
+    <string name="satra_nav_more">بیشتر</string>
+    <string name="satra_nav_configs">کانفیگ‌ها</string>
+    <string name="satra_nav_logs">لاگ</string>
+    <string name="satra_nav_settings">تنظیمات</string>
+    <string name="satra_capsule_connect">وصل شو</string>
+    <string name="satra_capsule_connecting">در حال اتصال…</string>
+    <string name="satra_capsule_connected">متصل</string>
+    <string name="satra_capsule_failed">اتصال ناموفق</string>
+    <string name="satra_capsule_ready">آماده</string>
+    <string name="satra_capsule_slide_on">بکش به راست برای وصل</string>
+    <string name="satra_capsule_slide_off">بکش به چپ برای قطع</string>
+    <string name="satra_capsule_a11y">کنترل VPN: %1$s</string>
+    <string name="satra_home_empty_hint">لینک ساب را از کلیپ‌بورد جای‌گذاری کنید</string>
+    <string name="satra_home_headline_ready">محافظت‌نشده</string>
+    <string name="satra_home_headline_connected">شما محافظت می‌شوید</string>
+    <string name="satra_home_headline_connecting">در حال امن‌سازی…</string>
+    <string name="satra_home_headline_failed">محافظت‌نشده</string>
+
+    <string name="satra_home_quota_time">زمان باقی‌مانده</string>
+    <string name="satra_home_quota_data">حجم باقی‌مانده</string>
+    <string name="satra_home_quota_days_of">%1$d / %2$d روز</string>
+    <string name="satra_home_quota_data_of">%1$s / %2$s</string>
+
+    <string name="satra_home_region_fallback">لوکیشن را انتخاب کنید</string>
+    <string name="satra_home_traffic_used">مصرف %1$s</string>
+    <string name="satra_home_traffic_left">باقی‌مانده %1$s</string>
+    <string name="satra_home_ping_a11y">پینگ فعلی %1$d میلی‌ثانیه</string>
+    <string name="satra_home_ping_none_a11y">هنوز پینگی نیست</string>
+    <string name="satra_orb_a11y">روشن/خاموش کردن VPN</string>
+    <string name="satra_settings_logs">لاگ‌ها</string>
+    <string name="satra_settings_logs_subtitle">تشخیص و خروجی هسته</string>
+    <string name="satra_subs_title">اشتراک‌ها</string>
+    <string name="satra_subs_add">افزودن</string>
+    <string name="satra_subs_enabled">فعال</string>
+    <string name="satra_auto_connect">اتصال خودکار</string>
+    <string name="satra_back">بازگشت</string>
+    <string name="satra_sub_settings">تنظیمات ساب</string>
+    <string name="satra_log_normal">عادی</string>
+    <string name="satra_log_debug">دیباگ</string>
+    <string name="satra_log_trace">تریس</string>
+    <string name="satra_log_copy">کپی</string>
+    <string name="satra_log_clear">پاک کردن</string>
+    <string name="satra_log_share">اشتراک‌گذاری</string>
+    <string name="satra_log_clear_confirm">همه خطوط لاگ پاک شوند؟</string>
+
+    <string name="satra_sub_show_usage">نمایش مصرف</string>
+    <string name="satra_sub_show_expire">نمایش انقضا</string>
+    <string name="satra_sub_show_announce">نمایش اطلاعیه</string>
+    <string name="satra_sub_show_support">نمایش لینک پشتیبانی</string>
+    <string name="satra_sub_device_limit_note">محدودیت دستگاه در هدر استاندارد ساب ارسال نمی‌شود</string>
+    <string name="satra_liquid_catalog">کاتالوگ Liquid Glass</string>
+
+    <string name="satra_choose_location">انتخاب لوکیشن</string>
+    <string name="satra_best_location">بهترین موجود</string>
+    <string name="satra_search_locations">جستجوی لوکیشن</string>
+    <string name="satra_ping">پینگ</string>
+    <string name="satra_test_all_ping">تست همه</string>
+    <string name="satra_sub_usage">مصرف داده</string>
+    <string name="satra_sub_remaining">باقیمانده</string>
+    <string name="satra_sub_unlimited">نامحدود</string>
+    <string name="satra_sub_expires">انقضا</string>
+    <string name="satra_sub_expired">منقضی شده</string>
+    <string name="satra_sub_no_expiry">بدون انقضا</string>
+    <string name="satra_sub_refresh">بروزرسانی</string>
+    <string name="satra_sub_servers_count">%d سرور</string>
+    <string name="satra_sub_low_quota">کمتر از ۱۰٪ حجم مانده</string>
+    <string name="satra_sub_near_expire">اشتراک به‌زودی تمام می‌شود</string>
+    <string name="satra_sub_add">افزودن اشتراک</string>
+    <string name="satra_sub_empty">برای شروع لینک اشتراک 3x-ui را اضافه کنید</string>
+    <string name="satra_sub_hub_hint">ترافیک، انقضا و اعلان‌های پنل از اشتراک 3x-ui شما</string>
+    <string name="satra_unknown_location">نامشخص</string>
+    <string name="satra_more_advanced">پیشرفته</string>
+    <string name="satra_manage_sub">مدیریت اشتراک</string>
+    <string name="satra_sort_by_ping">مرتب‌سازی پینگ</string>
+    <string name="satra_sort_by_name">مرتب‌سازی نام</string>
+    <string name="satra_sort_by_country">مرتب‌سازی کشور</string>
+    <string name="satra_locations_empty">لوکیشنی نیست — اشتراک اضافه کنید</string>
+    <string name="satra_sub_announce">اعلان</string>
+    <string name="satra_sub_support">پشتیبانی</string>
+    <string name="satra_sub_profile_page">صفحه پروفایل</string>
+    <string name="satra_sub_updated">بروزرسانی %1$s</string>
+    <string name="satra_sub_interval">هر %1$d ساعت</string>
+    <string name="satra_notif_control">کنترل اعلان</string>
+    <string name="satra_notif_control_desc">پیش‌نمایش و شخصی‌سازی اعلان VPN</string>
+    <string name="satra_notif_preview">پیش‌نمایش زنده</string>
+    <string name="satra_notif_show_speed">نمایش سرعت</string>
+    <string name="satra_notif_show_location">نمایش لوکیشن</string>
+    <string name="satra_notif_action_stop">اکشن قطع</string>
+    <string name="satra_notif_action_restart">اکشن ری‌استارت</string>
+    <string name="satra_notif_open_system">تنظیمات کانال سیستم</string>
+    <string name="satra_notif_title_connected">متصل</string>
     <string name="app_widget_name">تعویض</string>
     <string name="app_tile_name">تعویض</string>
     <string name="app_tile_first_use">برای اولین استفاده از این قابلیت، لطفاً ابتدا از داخل برنامه یک سرور اضافه کنید</string>
@@ -14,7 +112,7 @@
     <string name="pull_down_to_refresh">برای بروزرسانی، صفحه را به پایین بکشید!</string>
 
     <!-- Notifications -->
-    <string name="notification_channel_service">سرویس v2rayNG</string>
+    <string name="notification_channel_service">سرویس SatraNG</string>
     <string name="notification_channel_subscription_updates">به‌روزرسانی اشتراک‌ها</string>
     <string name="notification_channel_connection_checks">بررسی اتصال</string>
     <string name="notification_action_stop_v2ray">توقف</string>
@@ -27,7 +125,7 @@
     <string name="toast_services_failure">شروع سرویس با شکست مواجه شد</string>
 
     <!--ServerActivity-->
-    <string name="title_server">فایل کانفیگ</string>
+    <string name="title_server">SatraNG</string>
     <string name="menu_item_add_config">افزودن کانفیگ</string>
     <string name="menu_item_save_config">ذخیره کانفیگ</string>
     <string name="menu_item_edit_config">ویرایش کردن کانفیگ</string>
@@ -561,4 +659,86 @@
     <string name="connection_test_empty_message">جزئیاتی در دسترس نیست</string>
     <string name="value_unknown">ناشناخته</string>
 
+    <string name="satra_manage_subscription">Manage subscription</string>
+    <string name="satra_sub_last_updated">Updated %1$s</string>
+    <string name="satra_sub_days_left">%1$d روز باقی‌مانده</string>
+    <string name="satra_sub_hours_left">%1$d hours left</string>
+    <string name="satra_notif_channels">Channels: VPN · subscription · test</string>
+    <string name="satra_settings_hub_title">مرکز کنترل</string>
+    <string name="satra_settings_hub_subtitle">اتصال، حریم خصوصی، اپ‌ها و عملکرد — با دسته‌بندی واضح.</string>
+    <string name="satra_settings_section_connection">اتصال</string>
+    <string name="satra_settings_section_apps">پوشش اپ‌ها</string>
+    <string name="satra_settings_section_experience">تجربه کاربری</string>
+    <string name="satra_settings_section_performance">عملکرد</string>
+    <string name="satra_settings_section_system">سیستم</string>
+    <string name="satra_settings_mode_vpn">حالت VPN</string>
+    <string name="satra_settings_mode_proxy">فقط پروکسی</string>
+    <string name="satra_settings_port_chip">پورت %1$s</string>
+    <string name="satra_settings_coverage_all">همه اپ‌ها از تانل</string>
+    <string name="satra_settings_coverage_selected">فقط اپ‌های انتخاب‌شده (Per-app روشن)</string>
+    <string name="satra_settings_per_app_master">پروکسی Per-app</string>
+    <string name="satra_settings_per_app_master_sub">خاموش = همه اپ‌ها از تانل. روشن = فقط اپ‌هایی که انتخاب می‌کنید.</string>
+    <string name="satra_settings_per_app_toggle_a11y">روشن یا خاموش کردن پروکسی Per-app</string>
+    <string name="satra_settings_on">روشن</string>
+    <string name="satra_settings_off">خاموش</string>
+    <string name="satra_settings_per_app_manage">انتخاب اپ‌ها</string>
+    <string name="satra_settings_per_app_manage_sub">کدام اپ‌ها از تانل استفاده کنند یا نکنند</string>
+    <string name="satra_settings_cat_mode_sub">VPN، فقط پروکسی، و روت</string>
+    <string name="satra_settings_cat_tunnel_sub">DNS، IPv6، HEV TUN، MTU</string>
+    <string name="satra_settings_cat_core_sub">SOCKS محلی، sniffing، DNS ریموت</string>
+    <string name="satra_settings_cat_ui_sub">زبان، تم، چیدمان</string>
+    <string name="satra_settings_cat_notif_sub">اقدام‌ها و جزئیات نوتیفیکیشن</string>
+    <string name="satra_settings_cat_routing_sub">قوانین مسیریابی دامنه و IP</string>
+    <string name="satra_settings_cat_mux_sub">هم‌زمانی Mux (ممکن است بعضی اپ‌ها را خراب کند)</string>
+    <string name="satra_settings_cat_fragment_sub">گزینه‌های Fragment برای TLS</string>
+    <string name="satra_settings_cat_obs_sub">انتخاب خودکار با پینگ یا بار</string>
+    <string name="satra_settings_cat_advanced_sub">بوت، Always-on VPN، URL تست</string>
+    <string name="satra_settings_tunnel_reset">اعمال پیش‌فرض تانل Satra</string>
+    <string name="satra_settings_tunnel_reset_sub">پورت ۲۸۸۸۸، HEV، DNS محلی، پوشش کل دستگاه</string>
+    <string name="satra_settings_tunnel_reset_done">پیش‌فرض‌های تانل Satra اعمال شد</string>
+    <string name="satra_settings_safety">ایمنی و Play Protect</string>
+    <string name="satra_settings_safety_sub">چرا گوگل برای APK خارج از استور هشدار می‌دهد</string>
+    <string name="satra_settings_safety_title">نکات نصب امن</string>
+    <string name="satra_settings_safety_body">SatraNG با کلید انتشار ما امضا شده و هنوز از Play Store توزیع نمی‌شود. فقط APK را از پوشه معتبر SatraNG نصب کنید.</string>
+    <string name="satra_settings_play_protect_title">درباره هشدار Play Protect</string>
+    <string name="satra_settings_play_protect_body">گوگل هنوز امضای این توسعه‌دهنده را به‌اندازه کافی ندیده است؛ این حکم بدافزار نیست. برای ادامه Install anyway را بزنید. اگر نمی‌خواهید APK آپلود شود Don\'t send را انتخاب کنید. با امضای پایدار این هشدار کمتر می‌شود.</string>
+
+<string name="satra_home_add_config">افزودن کانفیگ</string>
+    <string name="satra_home_add_config_sub">از کلیپ‌بورد — لینک اشتراک یا آدرس نود</string>
+
+    <string name="satra_home_quick_config">کانفیگ سریع</string>
+    <string name="satra_home_support">پشتیبانی</string>
+    <string name="satra_settings_connection_sub">حالت، هسته، مالتی‌پلکس</string>
+    <string name="satra_settings_privacy_title">حریم خصوصی</string>
+    <string name="satra_settings_privacy_sub">DNS، اسنیفینگ، قطع اضطراری</string>
+    <string name="satra_settings_per_app_sub">شامل / حذف اپ‌ها</string>
+    <string name="satra_settings_routing_sub">قوانین و استراتژی دامنه</string>
+    <string name="satra_settings_backup_sub">خروجی و بازیابی</string>
+    <string name="satra_settings_about_sub">نسخه و مجوزها</string>
+    <string name="satra_configs_add">افزودن</string>
+    <string name="satra_configs_test">تست</string>
+    <string name="satra_configs_actions_fab">عملیات کانفیگ</string>
+    <string name="satra_sub_update_all">به‌روزرسانی همه</string>
+    <string name="satra_configs_ungrouped">بدون گروه</string>
+    <string name="satra_usage_title">مصرف</string>
+    <string name="satra_usage_daily">مصرف روزانه</string>
+    <string name="satra_usage_peak_hours">ساعات اوج</string>
+    <string name="satra_usage_top_apps">اپ‌های پرمصرف</string>
+    <string name="satra_usage_empty">هنوز داده‌ای نیست</string>
+    <string name="satra_usage_hour_label">%1$d:00</string>
+    <string name="satra_usage_permission_hint">برای دیدن ترافیک هر اپ از طریق VPN، دسترسی Usage را بدهید.</string>
+    <string name="satra_usage_grant_permission">باز کردن دسترسی Usage</string>
+    <string name="satra_limit_channel">محدودیت اپ</string>
+    <string name="satra_limit_notif_title">محدودیت اپ رسید</string>
+    <string name="satra_limit_notif_volume">%1$s به سقف حجم رسید و از VPN خارج شد.</string>
+    <string name="satra_limit_notif_time">%1$s به سقف زمان رسید و از VPN خارج شد.</string>
+    <string name="satra_limit_action_plus_30mb">+۳۰ مگ</string>
+    <string name="satra_limit_action_plus_10min">+۱۰ دقیقه</string>
+    <string name="satra_limit_action_clear">حذف محدودیت</string>
+    <string name="satra_limit_action_pause_24h">رد کردن ۲۴س</string>
+    <string name="satra_limit_set_100mb">سقف ۱۰۰ مگ</string>
+    <string name="satra_limit_set_30min">سقف ۳۰ دقیقه</string>
+    <string name="satra_limit_status">سقف %1$s / %2$s دقیقه · مصرف %3$s / %4$s دقیقه</string>
+    <string name="satra_home_ping_all">تست پینگ</string>
+    <string name="satra_sub_update_one">به‌روزرسانی</string>
 </resources>

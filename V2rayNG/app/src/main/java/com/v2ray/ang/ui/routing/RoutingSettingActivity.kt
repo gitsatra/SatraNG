@@ -63,6 +63,33 @@ import com.v2ray.ang.ui.compose.verticalScrollbar
 import com.v2ray.ang.util.JsonUtil
 import com.v2ray.ang.util.LogUtil
 import com.v2ray.ang.util.Utils
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.runtime.produceState
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.zIndex
+import com.v2ray.ang.handler.RoutingPresets
+import com.v2ray.ang.ui.compose.satra.InsetGroup
+import com.v2ray.ang.ui.compose.satra.LazyGroupRow
+import com.v2ray.ang.ui.compose.satra.Satra
+import com.v2ray.ang.ui.compose.satra.SatraAlert
+import com.v2ray.ang.ui.compose.satra.SatraBadge
+import com.v2ray.ang.ui.compose.satra.SatraCheckCircle
+import com.v2ray.ang.ui.compose.satra.SatraIconButton
+import com.v2ray.ang.ui.compose.satra.SatraIcons
+import com.v2ray.ang.ui.compose.satra.SatraLazyPage
+import com.v2ray.ang.ui.compose.satra.SatraMenu
+import com.v2ray.ang.ui.compose.satra.SatraMenuItem
+import com.v2ray.ang.ui.compose.satra.SatraRow
+import com.v2ray.ang.ui.compose.satra.SatraShapes
+import com.v2ray.ang.ui.compose.satra.SatraSheet
+import com.v2ray.ang.ui.compose.satra.SatraSpace
+import com.v2ray.ang.ui.compose.satra.SatraSwitch
+import com.v2ray.ang.ui.compose.satra.SheetTitle
+import com.v2ray.ang.ui.compose.satra.currentLocale
+import com.v2ray.ang.ui.compose.satra.satraClickable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -71,18 +98,15 @@ import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
 private enum class RoutingMenuAction(@StringRes val labelRes: Int) {
-    ImportPredefined(R.string.routing_settings_import_predefined_rulesets),
     ImportClipboard(R.string.routing_settings_import_rulesets_from_clipboard),
     ImportQRCode(R.string.routing_settings_import_rulesets_from_qrcode),
     ExportClipboard(R.string.routing_settings_export_rulesets_to_clipboard)
 }
 
-private enum class RoutingPreset(val type: RoutingType, @StringRes val labelRes: Int) {
-    ChinaWhitelist(RoutingType.WHITE, R.string.routing_preset_china_whitelist),
-    ChinaBlacklist(RoutingType.BLACK, R.string.routing_preset_china_blacklist),
-    Global(RoutingType.GLOBAL, R.string.routing_preset_global),
-    IranWhitelist(RoutingType.WHITE_IRAN, R.string.routing_preset_iran_whitelist),
-    RussiaWhitelist(RoutingType.WHITE_RUSSIA, R.string.routing_preset_russia_whitelist)
+private enum class RoutingPreset(val type: RoutingType, @StringRes val labelRes: Int, @StringRes val noteRes: Int, val flag: String) {
+    IranWhitelist(RoutingType.WHITE_IRAN, R.string.sx_routing_iran, R.string.sx_routing_iran_note, "🇮🇷"),
+    RussiaWhitelist(RoutingType.WHITE_RUSSIA, R.string.sx_routing_russia, R.string.sx_routing_russia_note, "🇷🇺"),
+    ChinaWhitelist(RoutingType.WHITE_CHINA, R.string.sx_routing_china, R.string.sx_routing_china_note, "🇨🇳"),
 }
 
 class RoutingSettingActivity : HelperBaseComponentActivity() {
@@ -201,10 +225,17 @@ fun RoutingSettingScreen(
     onImportQRcode: () -> Unit,
     onExportClipboard: () -> Unit
 ) {
+    val c = Satra.colors
+    val context = LocalContext.current
     val rulesets by viewModel.rulesetsFlow.collectAsStateWithLifecycle()
     val domainStrategy by domainStrategyState.collectAsState()
     var showMenu by remember { mutableStateOf(false) }
-    var showPresetDialog by remember { mutableStateOf(false) }
+    var confirmPreset by remember { mutableStateOf<RoutingPreset?>(null) }
+    var pickStrategy by remember { mutableStateOf(false) }
+    val presets by produceState<Map<RoutingType, List<RulesetItem>>>(emptyMap()) {
+        value = withContext(Dispatchers.IO) { SettingsManager.offeredRoutingPresets(context) }
+    }
+    val active = remember(rulesets, presets) { RoutingPresets.matching(rulesets, presets) }
 
     val domainStrategies = stringArrayResource(R.array.routing_domain_strategy).toList()
     val lazyListState = rememberLazyListState()
@@ -212,184 +243,175 @@ fun RoutingSettingScreen(
         // Lazy list indices include the preceding non-rule content, so resolve the stable rule keys.
         val fromIndex = rulesets.indexOfFirst { it.id == from.key }
         val toIndex = rulesets.indexOfFirst { it.id == to.key }
-        viewModel.move(fromIndex, toIndex)
+        if (fromIndex >= 0 && toIndex >= 0) viewModel.move(fromIndex, toIndex)
     }
 
-    Scaffold(
-        contentWindowInsets = WindowInsets(0),
-        topBar = {
-            AppTopBar(
-                title = stringResource(R.string.routing_settings_title),
-                onBackClick = onBackClick,
-                actions = {
-                    IconButton(onClick = onAddRule) {
-                        Icon(
-                            painterResource(R.drawable.ic_add_24dp),
-                            contentDescription = stringResource(R.string.acc_add_rule)
-                        )
-                    }
-                    Box {
-                        IconButton(onClick = { showMenu = true }) {
-                            Icon(
-                                painterResource(R.drawable.ic_more_vert_24dp),
-                                contentDescription = stringResource(R.string.acc_more)
-                            )
-                        }
-                        DropdownMenu(
-                            expanded = showMenu,
-                            onDismissRequest = { showMenu = false },
-                            containerColor = MaterialTheme.colorScheme.surface
-                        ) {
-                            AppDropdownMenuItems(RoutingMenuAction.entries, { it.labelRes }) { action ->
-                                showMenu = false
-                                when (action) {
-                                    RoutingMenuAction.ImportPredefined -> showPresetDialog = true
-                                    RoutingMenuAction.ImportClipboard -> onImportClipboard()
-                                    RoutingMenuAction.ImportQRCode -> onImportQRcode()
-                                    RoutingMenuAction.ExportClipboard -> onExportClipboard()
-                                }
+    SatraLazyPage(
+        title = stringResource(R.string.sx_routing_title),
+        onBack = onBackClick,
+        state = lazyListState,
+        actions = {
+            SatraIconButton(SatraIcons.Plus, stringResource(R.string.acc_add_rule), onClick = onAddRule)
+            Box {
+                SatraIconButton(SatraIcons.More, stringResource(R.string.acc_more), onClick = { showMenu = true })
+                SatraMenu(expanded = showMenu, onDismiss = { showMenu = false }) {
+                    RoutingMenuAction.entries.forEach { action ->
+                        SatraMenuItem(stringResource(action.labelRes), onClick = {
+                            showMenu = false
+                            when (action) {
+                                RoutingMenuAction.ImportClipboard -> onImportClipboard()
+                                RoutingMenuAction.ImportQRCode -> onImportQRcode()
+                                RoutingMenuAction.ExportClipboard -> onExportClipboard()
                             }
-                        }
+                        })
                     }
                 }
+            }
+        },
+    ) {
+        item(key = "preset") {
+            InsetGroup(
+                header = stringResource(R.string.sx_routing_preset),
+                footer = if (active == null && presets.isNotEmpty()) stringResource(R.string.sx_routing_custom_note) else null,
+            ) {
+                RoutingPreset.entries.forEach { preset ->
+                    row {
+                        SatraRow(
+                            title = stringResource(preset.labelRes),
+                            subtitle = stringResource(preset.noteRes),
+                            leading = { Text(preset.flag, style = Satra.type.title2) },
+                            trailing = if (active == preset.type) ({ SatraCheckCircle(true) }) else null,
+                            onClick = { if (active != preset.type) confirmPreset = preset },
+                        )
+                    }
+                }
+            }
+        }
+        item(key = "exceptions") { RoutingExceptionsSection() }
+        item(key = "rules_h") {
+            Text(
+                stringResource(R.string.sx_routing_rules).uppercase(currentLocale()),
+                style = Satra.type.footnote.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Medium),
+                color = c.textSecondary,
+                modifier = Modifier.padding(horizontal = SatraSpace.Gutter + 16.dp).padding(top = 22.dp, bottom = 7.dp),
             )
         }
-    ) { innerPadding ->
-        LazyColumn(
-            state = lazyListState,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .verticalScrollbar(lazyListState),
-            contentPadding = NavigationBarsBottomPadding()
-        ) {
-            item(key = "domain_strategy") {
-                SettingsListItem(
-                    title = stringResource(R.string.routing_settings_domain_strategy),
-                    entries = domainStrategies,
-                    values = domainStrategies,
-                    selectedValue = domainStrategy,
-                    onSelected = { onDomainStrategySelected(it) }
-                )
-            }
-            item {
-                Text(
-                    text = stringResource(R.string.routing_settings_rule_title),
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
-
-            itemsIndexed(
-                items = rulesets,
-                key = { _, ruleset -> ruleset.id }
-            ) { index, ruleset ->
-                ReorderableItem(reorderableState, key = ruleset.id) { isDragging ->
-                    ReorderableListItem(
-                        scope = this,
-                        isDragging = isDragging
+        itemsIndexed(items = rulesets, key = { _, ruleset -> ruleset.id }) { index, ruleset ->
+            ReorderableItem(reorderableState, key = ruleset.id) { isDragging ->
+                val lift by animateDpAsState(if (isDragging) 8.dp else 0.dp, label = "lift")
+                LazyGroupRow(index, rulesets.size, modifier = Modifier.zIndex(if (isDragging) 1f else 0f).shadow(lift, SatraShapes.Medium)) {
+                    Row(
+                        Modifier.fillMaxWidth().longPressDraggableHandle(),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         RoutingRulesetItem(
                             ruleset = ruleset,
                             onEdit = { onEditRule(index) },
-                            onEnabledChange = { checked ->
-                                val updated = ruleset.copy(enabled = checked)
-                                viewModel.update(index, updated)
-                            }
+                            onEnabledChange = { checked -> viewModel.update(index, ruleset.copy(enabled = checked)) },
                         )
                     }
-                    ItemDivider()
+                }
+            }
+        }
+        item(key = "rules_f") {
+            Text(
+                stringResource(R.string.sx_routing_rules_note),
+                style = Satra.type.footnote, color = c.textSecondary,
+                modifier = Modifier.padding(horizontal = SatraSpace.Gutter + 16.dp).padding(top = 7.dp),
+            )
+        }
+        item(key = "advanced") {
+            Spacer(Modifier.height(22.dp))
+            InsetGroup(header = stringResource(R.string.sx_routing_advanced)) {
+                row {
+                    SatraRow(
+                        title = stringResource(R.string.routing_settings_domain_strategy),
+                        value = domainStrategy,
+                        chevron = true,
+                        onClick = { pickStrategy = true },
+                    )
                 }
             }
         }
     }
 
-
-    if (showPresetDialog) {
-        SelectListDialog(
-            title = stringResource(R.string.routing_settings_import_predefined_rulesets),
-            options = RoutingPreset.entries,
-            optionText = { stringResource(it.labelRes) },
-            onSelected = { preset ->
-                showPresetDialog = false
-                onImportPredefined(preset.type)
-            },
-            onDismiss = { showPresetDialog = false }
+    confirmPreset?.let { preset ->
+        SatraAlert(
+            title = stringResource(R.string.sx_routing_apply_title, stringResource(preset.labelRes)),
+            message = stringResource(R.string.sx_routing_apply_msg),
+            confirmText = stringResource(R.string.sx_routing_apply),
+            dismissText = stringResource(R.string.sx_cancel),
+            onConfirm = { confirmPreset = null; onImportPredefined(preset.type) },
+            onDismiss = { confirmPreset = null },
         )
+    }
+    if (pickStrategy) {
+        SatraSheet(onDismiss = { pickStrategy = false }) {
+            SheetTitle(stringResource(R.string.routing_settings_domain_strategy))
+            InsetGroup {
+                domainStrategies.forEach { v ->
+                    row {
+                        SatraRow(
+                            title = v,
+                            trailing = if (v == domainStrategy) ({ Icon(SatraIcons.Check, null, tint = c.accent) }) else null,
+                            onClick = { pickStrategy = false; onDomainStrategySelected(v) },
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.height(20.dp))
+        }
     }
 }
 
 @Composable
-private fun RoutingRulesetItem(
+private fun RowScope.RoutingRulesetItem(
     ruleset: RulesetItem,
     onEdit: () -> Unit,
     onEnabledChange: (Boolean) -> Unit
 ) {
+    val c = Satra.colors
+    val (tagColor, tagBg) = when (ruleset.outboundTag) {
+        "direct" -> c.success to c.successSoft
+        "block" -> c.danger to c.dangerSoft
+        else -> c.accent to c.accentSoft
+    }
+    val tagLabel = when (ruleset.outboundTag) {
+        "direct" -> stringResource(R.string.sx_routing_tag_direct)
+        "block" -> stringResource(R.string.sx_routing_tag_block)
+        "proxy" -> stringResource(R.string.sx_routing_tag_proxy)
+        else -> ruleset.outboundTag
+    }
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
+        Modifier
+            .weight(1f)
+            .satraClickable(role = Role.Button, pressedScale = 0.985f, onClick = onEdit)
+            .padding(start = 16.dp, top = 10.dp, bottom = 10.dp, end = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(modifier = Modifier.weight(1f)) {
+        Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = ruleset.remarks ?: "",
-                    style = MaterialTheme.typography.bodyLarge,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    ruleset.remarks.orEmpty(),
+                    style = Satra.type.body, color = if (ruleset.enabled) c.textPrimary else c.textTertiary,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false),
                 )
                 if (ruleset.locked == true) {
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Icon(
-                        painter = painterResource(R.drawable.ic_lock_24dp),
-                        contentDescription = stringResource(R.string.acc_locked),
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Spacer(Modifier.width(6.dp))
+                    Icon(SatraIcons.Lock, stringResource(R.string.acc_locked), tint = c.textTertiary, modifier = Modifier.size(14.dp))
                 }
             }
-            val domainIpInfo = (ruleset.domain ?: ruleset.ip ?: ruleset.process ?: ruleset.port)?.toString() ?: ""
-            if (domainIpInfo.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = domainIpInfo,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-            if (!ruleset.outboundTag.isNullOrEmpty()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = ruleset.outboundTag,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = colorConfigType
-                )
+            val info = (ruleset.domain ?: ruleset.ip ?: ruleset.process)?.joinToString(", ") ?: ruleset.port.orEmpty()
+            if (info.isNotEmpty()) {
+                Text(info, style = Satra.type.footnote, color = c.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
-
-        Column(
-            horizontalAlignment = Alignment.End,
-            modifier = Modifier.padding(start = 8.dp)
-        ) {
-            IconButton(onClick = onEdit) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_edit_24dp),
-                    contentDescription = stringResource(R.string.acc_edit)
-                )
-            }
-            Spacer(modifier = Modifier.height(4.dp))
-            Switch(
-                checked = ruleset.enabled ?: false,
-                onCheckedChange = onEnabledChange,
-                modifier = Modifier.scale(0.7f),
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = MaterialTheme.colorScheme.onSecondary,
-                    checkedTrackColor = MaterialTheme.colorScheme.secondary
-                )
-            )
+        if (ruleset.outboundTag.isNotEmpty()) {
+            Spacer(Modifier.width(8.dp))
+            SatraBadge(tagLabel, tagColor, tagBg)
         }
+    }
+    Box(Modifier.padding(end = 12.dp)) {
+        SatraSwitch(checked = ruleset.enabled, onCheckedChange = onEnabledChange)
     }
 }

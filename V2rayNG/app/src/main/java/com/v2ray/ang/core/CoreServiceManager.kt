@@ -9,7 +9,6 @@ import android.content.IntentFilter
 import android.net.ConnectivityManager
 import android.os.Build
 import android.os.ParcelFileDescriptor
-import android.system.OsConstants
 import androidx.core.content.ContextCompat
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.contracts.IDialerService
@@ -20,10 +19,14 @@ import com.v2ray.ang.dto.entities.ProfileItem
 import com.v2ray.ang.enums.BrowserDialerMode
 import com.v2ray.ang.extension.delay
 import com.v2ray.ang.extension.isNotNullEmpty
+import com.v2ray.ang.handler.UsageSampler
 import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.handler.NotificationManager
+import com.v2ray.ang.handler.ProcessUidResolver
 import com.v2ray.ang.handler.SettingsManager
 import com.v2ray.ang.handler.SpeedtestManager
+import com.v2ray.ang.handler.UidTunnelMeter
+import com.v2ray.ang.handler.VpnAppUsageTracker
 import com.v2ray.ang.helper.MessageHelper
 import com.v2ray.ang.service.DialerNativeService
 import com.v2ray.ang.service.DialerWebviewService
@@ -42,7 +45,6 @@ import libv2ray.CoreCallbackHandler
 import libv2ray.CoreController
 import libv2ray.ProcessFinder
 import java.lang.ref.SoftReference
-import java.net.InetSocketAddress
 
 object CoreServiceManager {
 
@@ -54,8 +56,18 @@ object CoreServiceManager {
     private var networkMonitor: NetworkMonitor? = null
     private val connectionTestScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    @Volatile
-    private var isReloading = false
+    @Volatile private var isReloading = false
+
+    /** Set when an APP/CATEGORY/DOMAIN limit must rebuild routing; drained even if a handover held the lock. */
+    @Volatile private var pendingPolicyReload = false
+
+    /**
+     * When true, the next policy reload also recreates the VPN TUN so keep-alive sockets die.
+     * Soft core reload alone leaves HTTP/2 and QUIC streams open on the previous lim-* path.
+     */
+    @Volatile private var pendingPolicyKillSockets = false
+
+    private val policyReloadLock = Any()
 
     /** Tun descriptor the core was started with, null in the proxy only and root run modes. */
     private var currentVpnInterface: ParcelFileDescriptor? = null
@@ -65,7 +77,9 @@ object CoreServiceManager {
             field = value
             val service = value?.get()?.getService()
             CoreNativeManager.initCoreEnv(service)
-            if (service != null && processFinder == null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            // Register on every supported API: getConnectionOwnerUid needs Q+, but /proc/net
+            // fallback works on older devices and is required for reliable appuid metering.
+            if (service != null && processFinder == null) {
                 processFinder = XrayProcessFinder(service)
                 coreController.registerProcessFinder(processFinder)
             }
@@ -130,6 +144,10 @@ object CoreServiceManager {
         val guid = MmkvManager.getSelectServer() ?: error("No server selected")
         val config = MmkvManager.decodeServerConfig(guid) ?: error("Failed to decode server config")
 
+        // Daemon process must apply this itself — UI-side ensureEngine can race MMKV before
+        // the service reads hev/route-only flags (log symptom: processFinder on 127.0.0.1).
+        UidTunnelMeter.ensureEngine()
+
         LogUtil.i(AppConfig.TAG, "StartCore-Manager: Starting core loop for ${config.remarks}")
         val result = CoreConfigManager.getV2rayConfig(service, guid)
         LogUtil.d(AppConfig.TAG, result.content)
@@ -145,9 +163,14 @@ object CoreServiceManager {
         } else {
             ""
         }
-        if (SettingsManager.isUsingHevTun()) {
+        val useHev = SettingsManager.isUsingHevTun()
+        if (useHev) {
             tunFd = 0
         }
+        LogUtil.w(
+            AppConfig.TAG,
+            "StartCore-Manager: hev=$useHev tunFd=$tunFd processRouting=${SettingsManager.canUseProcessRouting()}",
+        )
 
         NotificationManager.showNotification(currentConfig)
         if (dialerAddr.isNotNullEmpty()) {
@@ -181,6 +204,7 @@ object CoreServiceManager {
             MessageHelper.sendMsg2UI(service, AppConfig.MSG_STATE_START_SUCCESS, "")
         }
         NotificationManager.startSpeedNotification()
+        UsageSampler.start(service)
         LogUtil.i(AppConfig.TAG, "StartCore-Manager: Core started successfully")
     }
 
@@ -191,6 +215,8 @@ object CoreServiceManager {
      */
     fun stopCoreLoop(): Boolean {
         connectionTestScope.coroutineContext.cancelChildren()
+        // Hotspot sharing never outlives the connection (a restart keeps it).
+        if (MmkvManager.decodeSettingsBool(AppConfig.PREF_USER_REQUESTED_STOP, false)) com.v2ray.ang.handler.HotspotShare.onDisconnect()
         val service = getService() ?: return false
 
         networkMonitor?.unregister()
@@ -216,6 +242,7 @@ object CoreServiceManager {
 
         MessageHelper.sendMsg2UI(service, AppConfig.MSG_STATE_STOP_SUCCESS, "")
         NotificationManager.cancelNotification()
+        UsageSampler.stop()
 
         try {
             service.unregisterReceiver(mMsgReceive)
@@ -239,7 +266,7 @@ object CoreServiceManager {
         networkMonitor = NetworkMonitor(
             connectivity = connectivity,
             onUnderlyingNetworksChanged = { networks -> serviceControl?.get()?.setUnderlyingNetworks(networks) },
-            onHandover = { reloadCore() },
+            onHandover = { reloadCore(killSockets = false) },
         ).also { it.register() }
     }
 
@@ -252,19 +279,48 @@ object CoreServiceManager {
      *
      * @return True if the core is running again.
      */
-    private fun reloadCore(): Boolean {
+    private fun reloadCore(killSockets: Boolean): Boolean {
         if (isReloading) return false
         val service = getService() ?: return false
         if (!isRunning()) return false
 
         return try {
-            val tunFd = currentVpnInterface
-
             isReloading = true
             connectionTestScope.coroutineContext.cancelChildren()
-            LogUtil.i(AppConfig.TAG, "StartCore-Manager: Core reload start...")
+            LogUtil.i(
+                AppConfig.TAG,
+                "StartCore-Manager: Core reload start (killSockets=$killSockets)...",
+            )
 
             coreController.stopLoop()
+            ProcessUidResolver.clearCache()
+            // Brief pause so the OS delivers RSTs for lim-*/HTTP-proxy keep-alives before the new
+            // loop binds the same local ports. Without this, apps can keep streaming on sockets that
+            // were opened under the previous (unblocked) routing. Removal: when stopLoop is proven
+            // to close every inbound/outbound before return on all supported ABIs.
+            try {
+                Thread.sleep(if (killSockets) 200L else 120L)
+            } catch (_: InterruptedException) {
+                Thread.currentThread().interrupt()
+            }
+
+            var tunFd = currentVpnInterface
+            if (killSockets) {
+                val fresh = serviceControl?.get()?.recreateVpnInterfaceForPolicy()
+                if (fresh != null) {
+                    currentVpnInterface = fresh
+                    tunFd = fresh
+                    // New TUN ⇒ VPN NetworkStats counters restart; re-anchor so the next OS poll
+                    // does not invent a huge delta or freeze metering.
+                    runCatching { VpnAppUsageTracker.begin(service) }
+                    LogUtil.w(AppConfig.TAG, "StartCore-Manager: TUN recreated for policy kill")
+                } else {
+                    LogUtil.w(
+                        AppConfig.TAG,
+                        "StartCore-Manager: TUN recreate unavailable; core reload only",
+                    )
+                }
+            }
             launchCore(service, tunFd, isReload = true)
 
             LogUtil.i(AppConfig.TAG, "StartCore-Manager: Core reload finished")
@@ -280,12 +336,90 @@ object CoreServiceManager {
     }
 
     /**
+     * Rebuilds routing (usage block/lim rules) and swaps the core in place; the VPN interface stays
+     * up so traffic cannot leak onto the underlying network the way a full service restart would.
+     * Retries when a handover/reload already holds [isReloading].
+     *
+     * @param killSockets When true, also recreates the VPN TUN so keep-alives on over-quota apps die.
+     */
+    fun reloadForPolicyChange(killSockets: Boolean = false) {
+        pendingPolicyReload = true
+        if (killSockets) pendingPolicyKillSockets = true
+        CoroutineScope(Dispatchers.IO).launch { drainPolicyReload() }
+    }
+
+    /**
+     * Same as [reloadForPolicyChange] but runs on the caller thread so the usage tick that crossed
+     * the cap does not return until block rules are installed (or retries are exhausted).
+     */
+    fun reloadForPolicyChangeSync(killSockets: Boolean = false) {
+        pendingPolicyReload = true
+        if (killSockets) pendingPolicyKillSockets = true
+        drainPolicyReload()
+    }
+
+    private fun drainPolicyReload() {
+        synchronized(policyReloadLock) {
+            var attempts = 0
+            while (pendingPolicyReload && attempts < 8) {
+                pendingPolicyReload = false
+                val kill = pendingPolicyKillSockets
+                pendingPolicyKillSockets = false
+                attempts++
+                if (reloadCore(killSockets = kill)) {
+                    LogUtil.i(
+                        AppConfig.TAG,
+                        "StartCore-Manager: Policy reload ok (attempt $attempts kill=$kill)",
+                    )
+                    continue
+                }
+                // Busy or not running — ask for another pass after a short wait; keep kill intent.
+                pendingPolicyReload = true
+                if (kill) pendingPolicyKillSockets = true
+                LogUtil.w(AppConfig.TAG, "StartCore-Manager: Policy reload deferred (attempt $attempts)")
+                try {
+                    Thread.sleep(150L)
+                } catch (_: InterruptedException) {
+                    Thread.currentThread().interrupt()
+                    return
+                }
+            }
+            if (pendingPolicyReload) {
+                LogUtil.e(AppConfig.TAG, "StartCore-Manager: Policy reload gave up after $attempts attempts")
+            }
+        }
+    }
+
+    /**
+     * Full VPN restart — only for explicit user/engine switches. Do not use for APP limit
+     * enforcement: tearing the VPN down opens a window where apps reach the internet directly
+     * (unmetered, unblocked) on the underlying network.
+     */
+    fun restartForPolicyChange() {
+        CoroutineScope(Dispatchers.IO).launch {
+            val control = serviceControl?.get() ?: return@launch
+            if (isReloading) return@launch
+            LogUtil.w(AppConfig.TAG, "StartCore-Manager: Policy restart (engine/VPN)")
+            try {
+                isReloading = true
+                control.stopService()
+                delay(500L)
+                LauncherManager.startService(control.getService())
+            } catch (e: Exception) {
+                LogUtil.e(AppConfig.TAG, "StartCore-Manager: Policy restart failed", e)
+            } finally {
+                isReloading = false
+            }
+        }
+    }
+
+    /**
      * Queries and resets all outbound traffic counters in one core call.
      * Go side format: tag,direction,value;tag,direction,value;
      */
     fun queryAllOutboundTrafficStats(): List<OutboundTrafficStat> {
         // The stats manager is gone once the core stops, querying it then reaches into freed state.
-        if (!isRunning()) return emptyList()
+        if (!isRunning() || isReloading) return emptyList()
 
         val payload = coreController.queryAllOutboundTrafficStats()
 
@@ -345,13 +479,8 @@ object CoreServiceManager {
             }
 
             ensureActive()
-            val endpoint = if (time >= 0) SpeedtestManager.getRemoteIPInfo() else null
-            val result = ConnectionTestResult(
-                delayMillis = time,
-                errorMessage = errorStr,
-                country = endpoint?.country,
-                ipAddress = endpoint?.ipAddress,
-            )
+            // Delay only: exit IP/country is measured on connect, never during ping tests.
+            val result = ConnectionTestResult(delayMillis = time, errorMessage = errorStr)
             withContext(Dispatchers.Main.immediate) {
                 if (isRunning()) {
                     MessageHelper.sendMsg2UI(service, AppConfig.MSG_MEASURE_DELAY_RESULT, result, requestId)
@@ -410,39 +539,26 @@ object CoreServiceManager {
     }
 
     /**
-     * Process finder implementation for Xray core.
-     * Uses ConnectivityManager to find the owning UID of a connection based on network parameters.
+     * Resolves the owning UID for every TUN / local-proxy flow via [ProcessUidResolver]
+     * (universal — same path for all packages).
      */
-    private class XrayProcessFinder(context: Context) : ProcessFinder {
-        private val cm: ConnectivityManager? = context.getSystemService(ConnectivityManager::class.java)
-
+    private class XrayProcessFinder(private val context: Context) : ProcessFinder {
         override fun findProcessByConnection(network: String, srcIP: String, srcPort: Long, destIP: String, destPort: Long): Long {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return -1L
-            if (cm == null) return -1L
-            val proto = when (network) {
-                "tcp" -> OsConstants.IPPROTO_TCP
-                "udp" -> OsConstants.IPPROTO_UDP
-                else -> return -1L
+            val uid = ProcessUidResolver.resolve(
+                context = context,
+                network = network,
+                srcIp = srcIP,
+                srcPort = srcPort.toInt().coerceIn(0, 65535),
+                destIp = destIP,
+                destPort = destPort.toInt().coerceIn(0, 65535),
+            )
+            if (uid > 0) {
+                LogUtil.d(
+                    AppConfig.TAG,
+                    "ProcessFinder: $network $srcIP:$srcPort -> $destIP:$destPort uid=$uid",
+                )
             }
-
-            if (destIP.isBlank() || destPort == 0L) {
-                LogUtil.d(AppConfig.TAG, "ProcessFinder: Find $network connection from $srcIP:$srcPort to :$destPort, (no dest)")
-                return -1L
-            }
-
-            return try {
-                val uid = cm.getConnectionOwnerUid(
-                    proto,
-                    InetSocketAddress(srcIP, srcPort.toInt()),
-                    InetSocketAddress(destIP, destPort.toInt())
-                ).toLong()
-                LogUtil.d(AppConfig.TAG, "ProcessFinder: Find $network connection from $srcIP:$srcPort to $destIP:$destPort, uid=$uid")
-                //LogUtil.d(AppConfig.TAG, "ProcessFinder: Find $network connection from $srcIP:$srcPort to $destIP:$destPort, uid=$uid,${PackageUidResolver.uidToPackageName(uid.toString())}")
-
-                uid
-            } catch (_: Exception) {
-                -1L
-            }
+            return uid.toLong()
         }
     }
 
@@ -474,6 +590,11 @@ object CoreServiceManager {
 
                 AppConfig.MSG_STATE_START -> {
                     // nothing to do
+                }
+
+                AppConfig.MSG_STATE_RELOAD -> {
+                    LogUtil.i(AppConfig.TAG, "StartCore-Manager: Policy reload")
+                    reloadForPolicyChange()
                 }
 
                 AppConfig.MSG_STATE_STOP -> {

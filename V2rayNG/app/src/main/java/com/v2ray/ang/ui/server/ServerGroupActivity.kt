@@ -1,6 +1,7 @@
 package com.v2ray.ang.ui.server
 
 import android.os.Bundle
+import com.v2ray.ang.ui.compose.satra.SatraScrollPage
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -237,19 +238,14 @@ fun ServerGroupScreen(
     val selectedType = typeEntries.indexOf(typeValue).coerceAtLeast(0).toString()
     val supportsObservatory = BalancerStrategyType.from(selectedType).supportsObservatory
 
-    Scaffold(
-        contentWindowInsets = WindowInsets(0),
-        topBar = {
-            AppTopBar(
-                title = EConfigType.POLICYGROUP.toString(),
-                onBackClick = onBackClick,
-                actions = {
+    SatraScrollPage(
+        title = EConfigType.POLICYGROUP.toString(),
+        onBack = onBackClick,
+        actions = {
                     if (showDelete) {
-                        IconButton(onClick = { showDeleteConfirm = true }) {
-                            Icon(painterResource(R.drawable.ic_delete_24dp), contentDescription = stringResource(R.string.acc_delete))
-                        }
+                        com.v2ray.ang.ui.compose.satra.SatraIconButton(icon = com.v2ray.ang.ui.compose.satra.SatraIcons.Trash, contentDescription = stringResource(R.string.acc_delete), onClick = { showDeleteConfirm = true }, tint = com.v2ray.ang.ui.compose.satra.Satra.colors.danger)
                     }
-                    IconButton(onClick = {
+                    com.v2ray.ang.ui.compose.satra.SatraBarTextAction(stringResource(R.string.sx_save), onClick = {
                         val remarksErr = remarks.isBlank()
                         isRemarksError = remarksErr
 
@@ -259,22 +255,10 @@ fun ServerGroupScreen(
                             val subIdx = subDisplay.indexOf(subValue).coerceAtLeast(0)
                             onSave(remarks, filter, typeIdx, subIdx, testOutbounds, fallbackTag)
                         }
-                    }) {
-                        Icon(painterResource(R.drawable.ic_fab_check), contentDescription = stringResource(R.string.acc_save))
-                    }
-                }
-            )
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .consumeWindowInsets(innerPadding)
-                .imePadding()
-                .padding(vertical = 8.dp)
-                .verticalScroll(rememberScrollState())
-        ) {
+                    })
+                },
+    ) {
+        run {
             FormTextField(
                 label = stringResource(R.string.server_lab_remarks),
                 value = remarks,

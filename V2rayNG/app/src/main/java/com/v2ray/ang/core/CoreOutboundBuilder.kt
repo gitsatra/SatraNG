@@ -571,7 +571,7 @@ object CoreOutboundBuilder {
         val tlsSetting = OutboundBean.StreamSettingsBean.TlsSettingsBean(
             allowInsecure = allowInsecure,
             serverName = sni.nullIfBlank(),
-            fingerprint = profileItem.fingerPrint.nullIfBlank(),
+            fingerprint = defaultFingerprint(profileItem.fingerPrint, streamSettings.security),
             alpn = profileItem.alpn?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }.takeIf { !it.isNullOrEmpty() },
             echConfigList = profileItem.echConfigList.nullIfBlank(),
             verifyPeerCertByName = profileItem.verifyPeerCertByName.nullIfBlank(),
@@ -704,5 +704,18 @@ object CoreOutboundBuilder {
                 LogUtil.w("V2rayConfigManager", "Invalid finalMask JSON, keeping previously generated finalmask")
             }
         }
+    }
+}
+
+/**
+ * uTLS fingerprint: keep the config's own value; when it has none, look like Chrome so the TLS
+ * ClientHello doesn't stand out as Go's. Plain (non-TLS) streams get none.
+ */
+internal fun defaultFingerprint(configured: String?, security: String?): String? {
+    val own = configured?.trim()?.takeIf { it.isNotEmpty() }
+    if (own != null) return own
+    return when (security?.lowercase()) {
+        "tls", "reality" -> "chrome"
+        else -> null
     }
 }

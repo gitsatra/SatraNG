@@ -41,8 +41,10 @@ class LogcatViewModel(application: Application) : BaseViewModel(application) {
                 val process = Runtime.getRuntime().exec(lst.toTypedArray())
                 val allText = process.inputStream.bufferedReader().use { it.readLines() }.reversed()
 
-                logsetsAll.clear()
-                logsetsAll.addAll(allText)
+                synchronized(logsetsAll) {
+                    logsetsAll.clear()
+                    logsetsAll.addAll(allText)
+                }
                 applyFilter()
             } catch (e: IOException) {
                 LogUtil.e(AppConfig.TAG, "Failed to get logcat", e)
@@ -64,7 +66,7 @@ class LogcatViewModel(application: Application) : BaseViewModel(application) {
             val process = Runtime.getRuntime().exec(lst.toTypedArray())
             process.waitFor()
 
-            logsetsAll.clear()
+            synchronized(logsetsAll) { logsetsAll.clear() }
             _filteredLogs.value = emptyList()
         } catch (e: IOException) {
             LogUtil.e(AppConfig.TAG, "Failed to clear logcat", e)
@@ -77,11 +79,9 @@ class LogcatViewModel(application: Application) : BaseViewModel(application) {
     }
 
     private fun applyFilter() {
-        _filteredLogs.value = if (currentFilter.isEmpty()) {
-            logsetsAll.toList()
-        } else {
-            logsetsAll.filter { it.contains(currentFilter) }
-        }
+        val all = synchronized(logsetsAll) { logsetsAll.toList() }
+        val f = currentFilter
+        _filteredLogs.value = if (f.isEmpty()) all else all.filter { it.contains(f, ignoreCase = true) }
     }
 }
 

@@ -6,46 +6,42 @@ import android.os.Bundle
 import androidx.activity.viewModels
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.R
+import com.v2ray.ang.extension.toast
 import com.v2ray.ang.extension.toastError
 import com.v2ray.ang.ui.base.BaseComponentActivity
-import com.v2ray.ang.ui.compose.AppTopBar
-import com.v2ray.ang.ui.compose.ItemDivider
-import com.v2ray.ang.ui.compose.NavigationBarsBottomPadding
-import com.v2ray.ang.ui.compose.verticalScrollbar
+import com.v2ray.ang.ui.compose.satra.LazyGroupRow
+import com.v2ray.ang.ui.compose.satra.Satra
+import com.v2ray.ang.ui.compose.satra.SatraEmptyState
+import com.v2ray.ang.ui.compose.satra.SatraIconButton
+import com.v2ray.ang.ui.compose.satra.SatraIcons
+import com.v2ray.ang.ui.compose.satra.SatraLazyPage
+import com.v2ray.ang.ui.compose.satra.SatraMenu
+import com.v2ray.ang.ui.compose.satra.SatraMenuItem
+import com.v2ray.ang.ui.compose.satra.ltr
 import com.v2ray.ang.util.LogUtil
 import com.v2ray.ang.util.Utils
 import kotlinx.coroutines.Dispatchers
@@ -61,6 +57,7 @@ class LogcatActivity : BaseComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (savedInstanceState == null) viewModel.loadLogcat()
     }
 
     @Composable
@@ -123,7 +120,6 @@ class LogcatActivity : BaseComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun LogcatScreen(
     viewModel: LogcatViewModel,
@@ -134,90 +130,70 @@ fun LogcatScreen(
     val scope = rememberCoroutineScope()
     val logs by viewModel.logEntries.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    LogcatContent(
+        logs = logs,
+        isLoading = isLoading,
+        searchQuery = searchQuery,
+        onSearchChange = { searchQuery = it; viewModel.filter(it) },
+        onBack = onBackClick,
+        onRefresh = { viewModel.loadLogcat() },
+        onCopyAll = { viewModel.copyLogcat() },
+        onShare = onShareLogcat,
+        onClear = { scope.launch(Dispatchers.IO) { viewModel.clearLogcat() } },
+        onCopyLine = { Utils.setClipboard(context, it); context.toast(R.string.sx_logs_copied) },
+    )
+}
 
-    var searchQuery by remember { mutableStateOf("") }
-    var showSearch by remember { mutableStateOf(false) }
-
-    val listState = rememberLazyListState()
-
-    Scaffold(
-        contentWindowInsets = WindowInsets(0),
-        topBar = {
-            AppTopBar(
-                title = stringResource(R.string.title_logcat),
-                onBackClick = onBackClick,
-                isLoading = isLoading,
-                isSearchActive = showSearch,
-                searchQuery = searchQuery,
-                onSearchQueryChange = {
-                    searchQuery = it
-                    viewModel.filter(it)
-                },
-                onSearchClose = {
-                    searchQuery = ""
-                    viewModel.filter("")
-                    showSearch = false
-                },
-                searchPlaceholder = stringResource(R.string.menu_item_search),
-                actions = {
-                    if (!showSearch) {
-                        IconButton(onClick = { showSearch = true }) {
-                            Icon(
-                                painterResource(R.drawable.ic_search_24dp),
-                                contentDescription = stringResource(R.string.acc_search)
-                            )
-                        }
-                    }
-                    IconButton(onClick = { viewModel.copyLogcat() }) {
-                        Icon(
-                            painterResource(R.drawable.ic_copy),
-                            contentDescription = stringResource(R.string.acc_copy_log)
-                        )
-                    }
-                    IconButton(onClick = { onShareLogcat() }) {
-                        Icon(
-                            painterResource(R.drawable.ic_share_24dp),
-                            contentDescription = stringResource(R.string.acc_share_log)
-                        )
-                    }
-                    IconButton(onClick = {
-                        scope.launch(Dispatchers.IO) { viewModel.clearLogcat() }
-                    }) {
-                        Icon(
-                            painterResource(R.drawable.ic_delete_24dp),
-                            contentDescription = stringResource(R.string.acc_clear_log)
-                        )
-                    }
+/** Stateless log page (also rendered by the screenshot tests). */
+@Composable
+fun LogcatContent(
+    logs: List<LogcatEntry>,
+    isLoading: Boolean,
+    searchQuery: String,
+    onSearchChange: (String) -> Unit,
+    onBack: () -> Unit,
+    onRefresh: () -> Unit,
+    onCopyAll: () -> Unit,
+    onShare: () -> Unit,
+    onClear: () -> Unit,
+    onCopyLine: (String) -> Unit,
+) {
+    var menu by remember { mutableStateOf(false) }
+    SatraLazyPage(
+        title = stringResource(R.string.sx_logs_title),
+        onBack = onBack,
+        isLoading = isLoading,
+        searchQuery = searchQuery,
+        onSearchChange = onSearchChange,
+        searchPlaceholder = stringResource(R.string.sx_search),
+        actions = {
+            SatraIconButton(SatraIcons.Refresh, stringResource(R.string.acc_refresh), onRefresh, enabled = !isLoading)
+            Box {
+                SatraIconButton(SatraIcons.More, stringResource(R.string.acc_more), { menu = true })
+                SatraMenu(expanded = menu, onDismiss = { menu = false }) {
+                    SatraMenuItem(stringResource(R.string.acc_copy_log), { menu = false; onCopyAll() }, SatraIcons.Copy)
+                    SatraMenuItem(stringResource(R.string.acc_share_log), { menu = false; onShare() }, SatraIcons.Share)
+                    SatraMenuItem(stringResource(R.string.sx_logs_clear), { menu = false; onClear() }, SatraIcons.Trash, destructive = true)
                 }
-            )
+            }
         },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { viewModel.loadLogcat() },
-                modifier = Modifier.navigationBarsPadding()
-            ) {
-                Icon(
-                    painterResource(R.drawable.ic_restore_24dp),
-                    contentDescription = stringResource(R.string.acc_refresh)
+    ) {
+        if (logs.isEmpty()) {
+            item(key = "empty") {
+                SatraEmptyState(
+                    icon = SatraIcons.Terminal,
+                    title = stringResource(R.string.sx_logs_empty_title),
+                    message = stringResource(R.string.sx_logs_empty_msg),
+                    actionText = stringResource(R.string.acc_refresh),
+                    onAction = onRefresh,
+                    modifier = Modifier.padding(top = 32.dp),
                 )
             }
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScrollbar(listState),
-                contentPadding = NavigationBarsBottomPadding()
-            ) {
-                items(items = logs, key = { it.key }) { log ->
-                    LogcatItem(log = log.text, onLongClick = { Utils.setClipboard(context, log.text) })
-                    ItemDivider()
+        } else {
+            items(logs.size, key = { logs[it].key }, contentType = { "log" }) { i ->
+                LazyGroupRow(i, logs.size, separatorInset = 14.dp) {
+                    LogcatItem(log = logs[i].text, onLongClick = { onCopyLine(logs[i].text) })
                 }
             }
         }
@@ -227,25 +203,27 @@ fun LogcatScreen(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun LogcatItem(log: String, onLongClick: () -> Unit) {
-    val (tag, content) = if (log.isEmpty()) {
-        "" to ""
-    } else {
-        val parts = log.split("):", limit = 2)
-        val tagPart = parts.first().split("(", limit = 2).first().trim()
-        val contentPart = if (parts.size > 1) parts.last().trim() else ""
-        tagPart to contentPart
+    val (tag, content) = remember(log) {
+        if (log.isEmpty()) "" to "" else {
+            val parts = log.split("):", limit = 2)
+            val tagPart = parts.first().split("(", limit = 2).first().trim()
+            val contentPart = if (parts.size > 1) parts.last().trim() else ""
+            tagPart to contentPart
+        }
     }
-
+    val c = Satra.colors
+    val level = tag.substringAfter(' ').substringAfter(' ').take(1)
+    val tint = when (level) { "E", "F" -> c.danger; "W" -> c.warning; else -> c.textSecondary }
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(onClick = {}, onLongClick = onLongClick)
-            .padding(8.dp)
+            .padding(horizontal = 14.dp, vertical = 10.dp)
     ) {
-        Text(text = tag, style = MaterialTheme.typography.bodySmall)
+        Text(text = ltr(tag), style = Satra.type.caption, color = tint, fontFamily = FontFamily.Monospace)
         if (content.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = content, style = MaterialTheme.typography.bodySmall)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(text = content, style = Satra.type.footnote, color = c.textPrimary, fontFamily = FontFamily.Monospace)
         }
     }
 }

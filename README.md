@@ -1,4 +1,6 @@
-# v2rayNG
+# SatraNG
+
+Fork of [v2rayNG](https://github.com/2dust/v2rayNG) with a fully redesigned Android UI. Same Xray/v2fly capabilities — new brand and interface.
 
 A V2Ray client for Android, support [Xray core](https://github.com/XTLS/Xray-core) and [v2fly core](https://github.com/v2fly/v2ray-core)
 
@@ -11,19 +13,27 @@ A V2Ray client for Android, support [Xray core](https://github.com/XTLS/Xray-cor
 
 ---
 
-## Download / 下载
+## Download / دانلود
 
-Download the latest release here:
+**Android (SatraNG):** https://github.com/gitsatra/SatraNG/releases/latest
 
-在这里下载最新版本：
+Pick `SatraNG_*_arm64-v8a.apk` (modern phones). The `-fdroid` build is the same app without Play-specific bits.
+SatraNG checks for updates itself (Satra Hub first, then these GitHub releases).
 
-[https://github.com/2dust/v2rayNG/releases](https://github.com/2dust/v2rayNG/releases)
+**Desktop (Windows / Linux / macOS — SatraN):** https://github.com/gitsatra/SatraN
 
-> [!TIP]
-> v2rayNG is the mobile version. For the desktop version, please visit the v2rayN \
-> v2rayNG 是手机版，电脑版请访问 v2rayN
->
-> https://github.com/2dust/v2rayN
+- Debian/Ubuntu/Linux: `curl -fsSL https://raw.githubusercontent.com/gitsatra/SatraN/main/install.sh | sh`
+  (uninstall: `curl -fsSL https://raw.githubusercontent.com/gitsatra/SatraN/main/uninstall.sh | sh`)
+- Windows (PowerShell): `irm https://raw.githubusercontent.com/gitsatra/SatraN/main/install.ps1 | iex`
+  (uninstall: `irm https://raw.githubusercontent.com/gitsatra/SatraN/main/uninstall.ps1 | iex`)
+
+### Building / signing
+Release builds are signed only when `V2rayNG/keystore/satra-release.p12` and `V2rayNG/keystore/signing.properties`
+(or env `SATRA_STORE_PASSWORD`/`SATRA_KEY_PASSWORD`) exist locally; neither is in this repository.
+Without them you get an unsigned release / debug-signed build.
+
+### License
+GPL-3.0, same as upstream [v2rayNG](https://github.com/2dust/v2rayNG). Credits to 2dust and all v2rayNG contributors.
 
 ---
 

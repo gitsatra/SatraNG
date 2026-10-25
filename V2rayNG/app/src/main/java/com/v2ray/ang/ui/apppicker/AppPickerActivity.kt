@@ -4,19 +4,9 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.viewModels
-import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -25,23 +15,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.v2ray.ang.R
 import com.v2ray.ang.dto.AppInfo
 import com.v2ray.ang.ui.base.BaseComponentActivity
-import com.v2ray.ang.ui.compose.AppDropdownMenuItems
-import com.v2ray.ang.ui.compose.AppListItem
-import com.v2ray.ang.ui.compose.AppTopBar
-import com.v2ray.ang.ui.compose.ItemDivider
-import com.v2ray.ang.ui.compose.NavigationBarsBottomPadding
-import com.v2ray.ang.ui.compose.verticalScrollbar
-
-private enum class AppPickerMenuAction(@StringRes val labelRes: Int) {
-    SelectAll(R.string.menu_item_select_all),
-    InvertSelection(R.string.menu_item_invert_selection)
-}
+import com.v2ray.ang.ui.compose.satra.LazyGroupRow
+import com.v2ray.ang.ui.compose.satra.SatraEmptyState
+import com.v2ray.ang.ui.compose.satra.SatraIconButton
+import com.v2ray.ang.ui.compose.satra.SatraIcons
+import com.v2ray.ang.ui.compose.satra.SatraLazyPage
+import com.v2ray.ang.ui.compose.satra.SatraMenu
+import com.v2ray.ang.ui.compose.satra.SatraMenuItem
+import com.v2ray.ang.ui.perappproxy.SplitAppRow
 
 class AppPickerActivity : BaseComponentActivity() {
 
@@ -118,86 +106,42 @@ fun AppPickerScreen(
     onSelectAll: () -> Unit,
     onInvertSelection: () -> Unit
 ) {
-    var showSearch by rememberSaveable { mutableStateOf(false) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
     var showMenu by remember { mutableStateOf(false) }
-    val listState = rememberLazyListState()
 
-    LaunchedEffect(Unit) {
-        onSearch(searchQuery)
-    }
+    LaunchedEffect(Unit) { onSearch(searchQuery) }
 
-    Scaffold(
-        contentWindowInsets = WindowInsets(0),
-        topBar = {
-            AppTopBar(
-                title = title,
-                onBackClick = onBackClick,
-                isLoading = isLoading,
-                isSearchActive = showSearch,
-                searchQuery = searchQuery,
-                onSearchQueryChange = { query ->
-                    searchQuery = query
-                    onSearch(query)
-                },
-                onSearchClose = {
-                    searchQuery = ""
-                    onSearch("")
-                    showSearch = false
-                },
-                searchPlaceholder = stringResource(R.string.menu_item_search),
-                actions = {
-                    if (!showSearch) {
-                        IconButton(onClick = { showSearch = true }) {
-                            Icon(
-                                painterResource(R.drawable.ic_search_24dp),
-                                contentDescription = stringResource(R.string.acc_search)
-                            )
-                        }
-                    }
-                    Box {
-                        IconButton(onClick = { showMenu = true }) {
-                            Icon(
-                                painterResource(R.drawable.ic_more_vert_24dp),
-                                contentDescription = null
-                            )
-                        }
-                        DropdownMenu(
-                            expanded = showMenu,
-                            onDismissRequest = { showMenu = false },
-                            containerColor = MaterialTheme.colorScheme.surface
-                        ) {
-                            AppDropdownMenuItems(AppPickerMenuAction.entries, { it.labelRes }) { action ->
-                                showMenu = false
-                                when (action) {
-                                    AppPickerMenuAction.SelectAll -> onSelectAll()
-                                    AppPickerMenuAction.InvertSelection -> onInvertSelection()
-                                }
-                            }
-                        }
-                    }
+    SatraLazyPage(
+        title = title,
+        onBack = onBackClick,
+        subtitle = if (selectedPackages.isNotEmpty()) pluralStringResource(R.plurals.sx_split_selected, selectedPackages.size, selectedPackages.size) else null,
+        isLoading = isLoading,
+        searchQuery = searchQuery,
+        onSearchChange = { searchQuery = it; onSearch(it) },
+        searchPlaceholder = stringResource(R.string.sx_search),
+        actions = {
+            Box {
+                SatraIconButton(SatraIcons.More, stringResource(R.string.acc_more), { showMenu = true })
+                SatraMenu(expanded = showMenu, onDismiss = { showMenu = false }) {
+                    SatraMenuItem(stringResource(R.string.menu_item_select_all), { showMenu = false; onSelectAll() }, SatraIcons.Check)
+                    SatraMenuItem(stringResource(R.string.menu_item_invert_selection), { showMenu = false; onInvertSelection() }, SatraIcons.Refresh)
                 }
-            )
-        }
-    ) { innerPadding ->
-        LazyColumn(
-            state = listState,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .verticalScrollbar(listState),
-            contentPadding = NavigationBarsBottomPadding()
-        ) {
-            items(items = apps, key = { it.packageName }) { app ->
-                val checked = selectedPackages.contains(app.packageName)
-                AppListItem(
-                    appName = app.appName,
-                    packageName = app.packageName,
-                    icon = null,
-                    checked = checked,
-                    onCheckedChange = { onToggleApp(app.packageName) }
+            }
+        },
+    ) {
+        if (apps.isEmpty() && !isLoading) {
+            item(key = "empty") {
+                SatraEmptyState(
+                    icon = SatraIcons.Search,
+                    title = stringResource(R.string.sx_servers_none_found),
+                    message = stringResource(R.string.sx_apps_none_found_msg),
+                    modifier = Modifier.padding(top = 32.dp),
                 )
-                ItemDivider()
+            }
+        }
+        itemsIndexed(items = apps, key = { _, it -> it.packageName }) { index, app ->
+            LazyGroupRow(index, apps.size, separatorInset = 64.dp) {
+                SplitAppRow(app, selectedPackages.contains(app.packageName)) { onToggleApp(app.packageName) }
             }
         }
     }

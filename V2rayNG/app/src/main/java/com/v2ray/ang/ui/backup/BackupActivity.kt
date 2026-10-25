@@ -1,6 +1,7 @@
 package com.v2ray.ang.ui.backup
 
 import android.content.Intent
+import com.v2ray.ang.ui.compose.satra.SatraScrollPage
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.viewModels
@@ -202,22 +203,12 @@ fun BackupScreen(
 
     val webDavSummary = currentWebDavConfig?.baseUrl
 
-    Scaffold(
-        contentWindowInsets = WindowInsets(0),
-        topBar = {
-            AppTopBar(
-                title = stringResource(R.string.title_configuration_backup_restore),
-                onBackClick = onBackClick,
-                isLoading = isLoading
-            )
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
-        ) {
+    SatraScrollPage(
+        title = stringResource(R.string.title_configuration_backup_restore),
+        onBack = onBackClick,
+        isLoading = isLoading,
+    ) {
+        run {
             SettingsMenuItem(
                 icon = painterResource(R.drawable.ic_backup_24dp),
                 title = stringResource(R.string.title_configuration_backup),

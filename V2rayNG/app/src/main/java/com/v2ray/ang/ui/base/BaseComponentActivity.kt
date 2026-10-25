@@ -4,9 +4,15 @@ import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import com.v2ray.ang.handler.AppLocaleManager
 import com.v2ray.ang.ui.compose.AppTheme
+import com.v2ray.ang.ui.compose.LocalDarkTheme
+import com.v2ray.ang.ui.compose.satraBackgroundBrush
 
 abstract class BaseComponentActivity : AppCompatActivity() {
 
@@ -16,7 +22,13 @@ abstract class BaseComponentActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContent {
             AppTheme {
-                ScreenContent()
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(satraBackgroundBrush(LocalDarkTheme.current))
+                ) {
+                    ScreenContent()
+                }
             }
         }
     }

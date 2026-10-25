@@ -58,6 +58,29 @@ object SubscriptionUpdater {
     }
 
     /**
+     * Cold start: refresh every enabled, auto-updating subscription that was not refreshed in the
+     * last few minutes (one batch through the update service). Off with the Settings switch.
+     */
+    fun refreshOnLaunch(context: Context = AngApplication.application, nowMs: Long = System.currentTimeMillis()) {
+        if (!MmkvManager.decodeSettingsBool(AppConfig.PREF_SATRA_SUB_UPDATE_ON_OPEN, true)) return
+        val ids = MmkvManager.decodeSubscriptions()
+            .filter { launchRefreshDue(it.subscription, nowMs) }
+            .map { it.guid }
+        if (ids.isEmpty()) return
+        LogUtil.i(AppConfig.TAG, "SubscriptionUpdater: refresh on launch for ${ids.size} subscription(s)")
+        MessageHelper.sendMsg2SubscriptionService(
+            context,
+            SubscriptionUpdateMessage(AppConfig.MSG_SUB_UPDATE_START, true, ids)
+        )
+    }
+
+    /** Pure rule for [refreshOnLaunch]: enabled, auto-updating, has a link, older than 5 minutes. */
+    internal fun launchRefreshDue(sub: com.v2ray.ang.dto.entities.SubscriptionItem, nowMs: Long): Boolean =
+        sub.enabled && sub.autoUpdate && sub.url.isNotBlank() && nowMs - sub.lastUpdated >= LAUNCH_MIN_AGE_MS
+
+    private const val LAUNCH_MIN_AGE_MS = 5 * 60_000L
+
+    /**
      * Sync a single subscription's task.
      * Call from: SubEditActivity after saving, after a manual update (to reset the timer).
      */

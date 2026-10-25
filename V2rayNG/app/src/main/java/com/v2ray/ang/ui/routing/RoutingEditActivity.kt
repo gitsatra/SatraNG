@@ -1,6 +1,7 @@
 package com.v2ray.ang.ui.routing
 
 import android.app.Activity
+import com.v2ray.ang.ui.compose.satra.SatraScrollPage
 import android.os.Bundle
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -177,22 +178,14 @@ fun RoutingEditScreen(
         return rulesetItem
     }
 
-    Scaffold(
-        contentWindowInsets = WindowInsets(0),
-        topBar = {
-            AppTopBar(
-                title = stringResource(R.string.routing_settings_rule_title),
-                onBackClick = onBackClick,
-                actions = {
+    SatraScrollPage(
+        title = stringResource(R.string.routing_settings_rule_title),
+        onBack = onBackClick,
+        actions = {
                     if (position >= 0) {
-                        IconButton(onClick = { showDeleteConfirm = true }) {
-                            Icon(
-                                painterResource(R.drawable.ic_delete_24dp),
-                                contentDescription = stringResource(R.string.acc_delete)
-                            )
-                        }
+                        com.v2ray.ang.ui.compose.satra.SatraIconButton(icon = com.v2ray.ang.ui.compose.satra.SatraIcons.Trash, contentDescription = stringResource(R.string.acc_delete), onClick = { showDeleteConfirm = true }, tint = com.v2ray.ang.ui.compose.satra.Satra.colors.danger)
                     }
-                    IconButton(onClick = {
+                    com.v2ray.ang.ui.compose.satra.SatraBarTextAction(stringResource(R.string.sx_save), onClick = {
                         val remarksErr = remarks.isBlank()
                         isRemarksError = remarksErr
 
@@ -200,26 +193,10 @@ fun RoutingEditScreen(
                         if (!hasError) {
                             onSave(buildRuleset())
                         }
-                    }) {
-                        Icon(
-                            painterResource(R.drawable.ic_fab_check),
-                            contentDescription = stringResource(R.string.acc_save)
-                        )
-                    }
-                }
-            )
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .consumeWindowInsets(innerPadding)
-                .imePadding()
-                .verticalScroll(scrollState)
-                .verticalScrollbar(scrollState)
-                .padding(vertical = 8.dp)
-        ) {
+                    })
+                },
+    ) {
+        run {
             FormTextField(
                 label = stringResource(R.string.sub_setting_remarks),
                 value = remarks,

@@ -1,6 +1,7 @@
 package com.v2ray.ang.ui.checkupdate
 
 import android.os.Bundle
+import com.v2ray.ang.ui.compose.satra.SatraScrollPage
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
@@ -65,22 +66,12 @@ fun CheckUpdateScreen(
     val libVersion = CoreNativeManager.getLibVersion()
     val versionText = "v${BuildConfig.VERSION_NAME} ($libVersion)"
 
-    Scaffold(
-        contentWindowInsets = WindowInsets(0),
-        topBar = {
-            AppTopBar(
-                title = stringResource(R.string.update_check_for_update),
-                onBackClick = onBackClick,
-                isLoading = isLoading
-            )
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
-        ) {
+    SatraScrollPage(
+        title = stringResource(R.string.update_check_for_update),
+        onBack = onBackClick,
+        isLoading = isLoading,
+    ) {
+        run {
             SettingsSwitchItem(
                 icon = painterResource(R.drawable.ic_source_code_24dp),
                 title = stringResource(R.string.update_check_pre_release),

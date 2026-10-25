@@ -30,6 +30,9 @@ class CoreTestService : Service() {
 
     // manage active batch workers so each batch is independent and cancellable
     private val activeWorkers = ConcurrentHashMap<RealPingWorkerService, String>()
+    @Volatile private var locator: ExitGeoLocator? = null
+    @Volatile private var speedJob: java.util.concurrent.Future<*>? = null
+    private val speedRunner = java.util.concurrent.Executors.newSingleThreadExecutor { r -> Thread(r, "speed-test").apply { isDaemon = true } }
     private val cancelAction by lazy {
         val intent = Intent(this, CoreTestService::class.java).putExtra(
             "content",
@@ -71,6 +74,8 @@ class CoreTestService : Service() {
     override fun onDestroy() {
         LogUtil.i(AppConfig.TAG, "CoreTestService is being destroyed, cancelling ${activeWorkers.size} active workers")
         cancelWorkers()
+        locator?.cancel()
+        locator = null
         NotificationHelper.stopForeground(this)
         super.onDestroy()
     }
@@ -101,11 +106,93 @@ class CoreTestService : Service() {
                 message, startId, intent.getStringExtra(MessageHelper.EXTRA_REQUEST_ID).orEmpty()
             )
             AppConfig.MSG_MEASURE_CONFIG_CANCEL -> handleMeasureCancel()
+            AppConfig.MSG_LOCATE_START -> handleLocateStart(message)
+            AppConfig.MSG_SPEED_START -> handleSpeedStart(message)
+            AppConfig.MSG_SPEED_CANCEL -> {
+                speedJob?.cancel(true)
+                speedJob = null
+                MessageHelper.sendMsg2UI(this, AppConfig.MSG_SPEED_FINISH, "")
+                stopIfIdle()
+            }
+            AppConfig.MSG_LOCATE_CANCEL -> {
+                locator?.cancel()
+                locator = null
+                stopIfIdle()
+            }
             else -> {
                 NotificationHelper.stopForeground(this); stopSelf(startId)
             }
         }
         return START_NOT_STICKY
+    }
+
+    private fun handleLocateStart(message: TestServiceMessage) {
+        locator?.cancel()
+        if (message.serverGuids.isEmpty()) {
+            locator = null
+            stopIfIdle()
+            return
+        }
+        NotificationHelper.updateNotification(
+            channelType = NotificationChannelType.CORE_TEST,
+            context = this,
+            title = getString(R.string.app_name),
+            content = getString(R.string.sx_locating_servers),
+        )
+        lateinit var created: ExitGeoLocator
+        created = ExitGeoLocator(
+            context = this,
+            guids = message.serverGuids,
+            onResult = { guid, ok ->
+                MessageHelper.sendMsg2UI(this, AppConfig.MSG_LOCATE_RESULT, RealPingResult(guid, if (ok) 1L else -1L))
+            },
+            onFinish = {
+                MessageHelper.sendMsg2UI(this, AppConfig.MSG_LOCATE_FINISH, "")
+                if (locator === created) locator = null
+                stopIfIdle()
+            },
+        )
+        locator = created
+        created.start()
+    }
+
+    /** Download speed tests, strictly one config at a time (they would skew each other). */
+    private fun handleSpeedStart(message: TestServiceMessage) {
+        speedJob?.cancel(true)
+        val guids = message.serverGuids.distinct().take(SPEED_MAX)
+        if (guids.isEmpty()) {
+            speedJob = null
+            stopIfIdle()
+            return
+        }
+        NotificationHelper.updateNotification(
+            channelType = NotificationChannelType.CORE_TEST,
+            context = this,
+            title = getString(R.string.app_name),
+            content = getString(R.string.sx_speed_testing),
+        )
+        lateinit var self: java.util.concurrent.Future<*>
+        self = speedRunner.submit {
+            for (guid in guids) {
+                if (Thread.currentThread().isInterrupted) break
+                val bps = com.v2ray.ang.handler.ExitIpProbe.speed(this, guid) { live, frac ->
+                    MessageHelper.sendMsg2UI(this, AppConfig.MSG_SPEED_PROGRESS, "$guid|$live|${(frac * 1000).toInt()}")
+                }
+                if (Thread.currentThread().isInterrupted) break
+                MessageHelper.sendMsg2UI(this, AppConfig.MSG_SPEED_RESULT, RealPingResult(guid, bps))
+            }
+            MessageHelper.sendMsg2UI(this, AppConfig.MSG_SPEED_FINISH, "")
+            if (speedJob === self) speedJob = null
+            stopIfIdle()
+        }
+        speedJob = self
+    }
+
+    private fun stopIfIdle() {
+        if (activeWorkers.isEmpty() && locator == null && speedJob == null) {
+            NotificationHelper.stopForeground(this)
+            stopSelf()
+        }
     }
 
     private fun handleMeasureStart(message: TestServiceMessage, startId: Int, requestId: String) {
@@ -173,10 +260,7 @@ class CoreTestService : Service() {
 
                 MessageHelper.sendMsg2UI(this, AppConfig.MSG_MEASURE_CONFIG_FINISH, event.status, requestId)
                 onWorkerDone()
-                if (activeWorkers.isEmpty()) {
-                    NotificationHelper.stopForeground(this)
-                    stopSelf()
-                }
+                stopIfIdle()
             }
         }
     }
@@ -184,8 +268,8 @@ class CoreTestService : Service() {
     private fun handleMeasureCancel() {
         LogUtil.i(AppConfig.TAG, "CoreTestService received cancel message, cancelling ${activeWorkers.size} active workers")
         cancelWorkers()
-        NotificationHelper.stopForeground(this)
-        stopSelf()
+        // A background exit-country lookup may still be running; it stops the service when done.
+        stopIfIdle()
     }
 
     private fun cancelWorkers() {
@@ -196,5 +280,10 @@ class CoreTestService : Service() {
                 MessageHelper.sendMsg2UI(this, AppConfig.MSG_MEASURE_CONFIG_CANCEL, "", requestId)
             }
         }
+    }
+
+    companion object {
+        /** Bounded: a bulk test never downloads more than this many configs' worth. */
+        const val SPEED_MAX = 12
     }
 }

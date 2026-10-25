@@ -14,7 +14,40 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 object UpdateCheckerManager {
+    /** Satra Hub first (domain, then direct IP); public GitHub gitsatra/SatraNG releases are the fallback. latest.json: {version, files:{name:{url,size,sha256}}}. */
+    const val HUB_ANDROID = "https://p.iivt.ir:2097/satra/dl/android/"
+
+    private fun fetch(url: String): String? =
+        (if (HubNet.isHub(url)) HubNet.getText(url) else null)
+            ?: HttpUtil.getUrlContent(UrlContentRequest(url = url, timeout = 6000)).takeUnless { it.isNullOrEmpty() }
+            ?: HttpUtil.getUrlContent(
+                UrlContentRequest(
+                    url = url, timeout = 8000, httpPort = SettingsManager.getHttpPort(),
+                    proxyUsername = SettingsManager.getSocksUsername(), proxyPassword = SettingsManager.getSocksPassword(),
+                )
+            ).takeUnless { it.isNullOrEmpty() }
+
+    /** Pure: picks the APK for this ABI / flavor from a Hub latest.json. Unit-testable. */
+    internal fun parseHub(json: String, abi: String, fdroid: Boolean): Pair<String, String>? {
+        val o = runCatching { com.google.gson.JsonParser.parseString(json).asJsonObject }.getOrNull() ?: return null
+        val ver = o.get("version")?.asString?.removePrefix("v") ?: return null
+        val files = o.getAsJsonObject("files") ?: return null
+        val names = files.keySet().filter { it.endsWith(".apk") && it.contains("fdroid") == fdroid }
+        val name = names.firstOrNull { it.contains(abi) } ?: names.firstOrNull { it.contains("universal") } ?: return null
+        val rel = files.getAsJsonObject(name)?.get("url")?.asString ?: name
+        return ver to (if (rel.startsWith("http")) rel else HUB_ANDROID + rel)
+    }
+
+    private fun checkHub(): CheckUpdateResult? {
+        val json = fetch(HUB_ANDROID + "latest.json") ?: return null
+        val (ver, url) = parseHub(json, Build.SUPPORTED_ABIS[0], BuildConfig.APPLICATION_ID.contains("fdroid", true)) ?: return null
+        return if (compareVersions(ver, BuildConfig.VERSION_NAME) > 0)
+            CheckUpdateResult(hasUpdate = true, latestVersion = ver, downloadUrl = url)
+        else CheckUpdateResult(hasUpdate = false, latestVersion = ver)
+    }
+
     suspend fun checkForUpdate(includePreRelease: Boolean = false): CheckUpdateResult = withContext(Dispatchers.IO) {
+        if (!includePreRelease) runCatching { checkHub() }.getOrNull()?.let { return@withContext it }
         val url = if (includePreRelease) {
             AppConfig.APP_API_URL
         } else {

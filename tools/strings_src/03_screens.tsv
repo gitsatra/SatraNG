@@ -1,0 +1,290 @@
+sx_tab_home	Home	خانه
+sx_tab_servers	Servers	سرورها
+sx_tab_subs	Subscriptions	اشتراک‌ها
+sx_tab_usage	Usage	مصرف
+sx_tab_more	Settings	تنظیمات
+sx_cancel	Cancel	انصراف
+sx_delete	Delete	حذف
+sx_deleted	Deleted	حذف شد
+sx_deleted_named	“%1$s” deleted	«%1$s» حذف شد
+sx_undo	Undo	بازگردانی
+sx_done	Done	تمام
+sx_save	Save	ذخیره
+sx_saved	Saved	ذخیره شد
+sx_search	Search	جستجو
+sx_clear	Clear	پاک کردن
+sx_loading	Loading…	در حال بارگذاری…
+sx_off	Off	خاموش
+sx_qr	QR code	کد QR
+sx_more_options	More options	گزینه‌های بیشتر
+sx_group_default	Default	پیش‌فرض
+sx_favorites	Favorites	علاقه‌مندی‌ها
+sx_language_system	System language	زبان سیستم
+sx_unit_mb	MB	مگابایت
+sx_unit_gb	GB	گیگابایت
+sx_unit_h	h	س
+sx_unit_m	m	د
+sx_servers_title	Servers	سرورها
+sx_servers_test_all	Test all servers	تست همه سرورها
+sx_servers_stop_test	Stop testing	توقف تست
+sx_servers_empty_title	No servers yet	هنوز سروری نیست
+sx_servers_empty_msg	Paste a config link, scan a QR code, or add a subscription to get started.	یک لینک کانفیگ را بچسبانید، کد QR را اسکن کنید یا یک اشتراک اضافه کنید.
+sx_servers_none_found	Nothing found	چیزی پیدا نشد
+sx_servers_none_found_msg	Try another search or turn off the favorites filter.	جستجوی دیگری امتحان کنید یا فیلتر علاقه‌مندی‌ها را خاموش کنید.
+sx_add_manual	Add manually	افزودن دستی
+sx_add_manual_msg	Choose the protocol of your server.	پروتکل سرور خود را انتخاب کنید.
+sx_sort_default	Default order	ترتیب پیش‌فرض
+sx_sort_ping	Sort by speed	مرتب‌سازی بر اساس سرعت
+sx_sort_name	Sort by name	مرتب‌سازی بر اساس نام
+sx_remove_duplicates	Remove duplicates	حذف موارد تکراری
+sx_remove_duplicates_title	Remove duplicate servers?	سرورهای تکراری حذف شوند؟
+sx_remove_invalid	Remove failed servers	حذف سرورهای ناموفق
+sx_remove_invalid_title	Remove servers that failed the test?	سرورهای ناموفق در تست حذف شوند؟
+sx_remove_other_msg	This can’t be undone.	این کار قابل بازگشت نیست.
+sx_remove_all	Delete all servers	حذف همه سرورها
+sx_remove_all_title	Delete all servers in this list?	همه سرورهای این فهرست حذف شوند؟
+sx_remove_all_msg	Every server in this list will be removed. This can’t be undone.	همه سرورهای این فهرست حذف می‌شوند. این کار قابل بازگشت نیست.
+sx_server_use	Use this server	استفاده از این سرور
+sx_server_favorite	Add to favorites	افزودن به علاقه‌مندی‌ها
+sx_server_unfavorite	Remove from favorites	حذف از علاقه‌مندی‌ها
+sx_server_recheck	Re-check location	بررسی دوباره موقعیت
+sx_server_edit	Edit	ویرایش
+sx_server_copy	Copy link	کپی لینک
+sx_server_qr	Show QR code	نمایش کد QR
+sx_server_copy_full	Copy full config	کپی کانفیگ کامل
+sx_subs_title	Subscriptions	اشتراک‌ها
+sx_subs_add	Add subscription	افزودن اشتراک
+sx_subs_edit	Edit subscription	ویرایش اشتراک
+sx_subs_update	Update now	به‌روزرسانی
+sx_subs_update_all	Update all	به‌روزرسانی همه
+sx_subs_empty_title	No subscriptions	اشتراکی وجود ندارد
+sx_subs_empty_msg	Add the link your provider gave you. SatraNG keeps your servers, traffic and expiry up to date.	لینکی را که ارائه‌دهنده به شما داده اضافه کنید. SatraNG سرورها، حجم و تاریخ انقضا را به‌روز نگه می‌دارد.
+sx_subs_hint	Pull down to update everything. Tap a subscription to edit it.	برای به‌روزرسانی همه، صفحه را به پایین بکشید. برای ویرایش، روی اشتراک بزنید.
+sx_subs_name	Name	نام
+sx_subs_url	Subscription link	لینک اشتراک
+sx_subs_err_name	Enter a name.	یک نام وارد کنید.
+sx_subs_err_url	Enter a valid https link.	یک لینک https معتبر وارد کنید.
+sx_subs_auto_update	Update automatically	به‌روزرسانی خودکار
+sx_subs_enabled	Enabled	فعال
+sx_subs_auto_footer	Automatic updates run in the background and refresh servers, traffic and expiry.	به‌روزرسانی خودکار در پس‌زمینه انجام می‌شود و سرورها، حجم و انقضا را تازه می‌کند.
+sx_subs_interval	Update every	به‌روزرسانی هر
+sx_subs_auto	Auto	خودکار
+sx_subs_never	Never updated	هرگز به‌روز نشده
+sx_subs_updated_ago	Updated %1$s	به‌روزرسانی: %1$s
+sx_subs_used	%1$s used	%1$s مصرف شده
+sx_subs_support	Support	پشتیبانی
+sx_subs_copy_link	Copy link	کپی لینک
+sx_subs_show_qr	Show QR code	نمایش کد QR
+sx_subs_advanced	More options…	گزینه‌های بیشتر…
+sx_subs_delete_title	Delete “%1$s”?	«%1$s» حذف شود؟
+sx_subs_delete_msg	The subscription and all of its servers will be removed.	اشتراک و همه سرورهای آن حذف می‌شود.
+sx_subs_updated_all	Updated %1$d, failed %2$d	%1$d موفق، %2$d ناموفق
+sx_subs_failed	Update failed. Check your link and connection.	به‌روزرسانی ناموفق بود. لینک و اتصال را بررسی کنید.
+sx_subs_nothing	Nothing to update	چیزی برای به‌روزرسانی نیست
+sx_usage_title	Usage	مصرف
+sx_range_7	7 days	۷ روز
+sx_range_30	30 days	۳۰ روز
+sx_usage_total	Total through VPN	مجموع مصرف از طریق VPN
+sx_usage_avg	Daily average	میانگین روزانه
+sx_usage_connected	Connected	مدت اتصال
+sx_usage_chart_data	Data per day	حجم مصرفی در هر روز
+sx_usage_chart_hours	Hours connected	ساعت اتصال در هر روز
+sx_usage_chart_empty	No data yet. Connect and your usage will show up here.	هنوز داده‌ای نیست. وصل شوید تا مصرف شما اینجا نمایش داده شود.
+sx_usage_apps	Apps	برنامه‌ها
+sx_usage_apps_empty	No app data for this period.	برای این بازه داده‌ای برای برنامه‌ها نیست.
+sx_usage_apps_footer	Only traffic while the VPN is connected, counted from when tracking started. Android reports it in batches, so it is approximate. Limits are counted exactly. Tap an app to limit it.	فقط ترافیکی که هنگام اتصال VPN مصرف شده، از زمان شروع ثبت. اندروید این آمار را با تأخیر گزارش می‌کند، پس تقریبی است؛ شمارش محدودیت‌ها دقیق است. برای محدود کردن، روی برنامه بزنید.
+sx_usage_access_title	Allow usage access	اجازه دسترسی به مصرف
+sx_usage_access_msg	To show how much data each app uses, Android needs you to switch this on once. SatraNG only reads network totals.	برای نمایش مصرف هر برنامه، اندروید می‌خواهد یک بار این دسترسی را روشن کنید. SatraNG فقط مجموع مصرف شبکه را می‌خواند.
+sx_usage_access_open	Open settings	باز کردن تنظیمات
+sx_usage_clear	Clear usage history	پاک کردن تاریخچه مصرف
+sx_usage_clear_title	Clear usage history?	تاریخچه مصرف پاک شود؟
+sx_usage_clear_msg	Charts start from zero. Your limits stay in place.	نمودارها از صفر شروع می‌شوند. محدودیت‌های شما حفظ می‌شود.
+sx_other_apps	System and other	سیستم و سایر
+sx_limited	Limited	محدود
+sx_limits	Limits	محدودیت‌ها
+sx_limit_none	No limits yet	هنوز محدودیتی نیست
+sx_limit_none_msg	Cap an app or a website. Only that app or site is blocked when it hits the cap — everything else keeps working.	یک برنامه یا وب‌سایت را محدود کنید. فقط همان برنامه یا سایت پس از رسیدن به سقف مسدود می‌شود و بقیه کار می‌کنند.
+sx_limit_add_app	Limit an app	محدود کردن برنامه
+sx_limit_add_site	Limit a website	محدود کردن وب‌سایت
+sx_limit_global	Total data limit	سقف کل مصرف
+sx_limit_global_sub	Turns the VPN off when you reach it	با رسیدن به سقف، VPN خاموش می‌شود
+sx_limit_global_enable	Use a total limit	فعال‌سازی سقف کل
+sx_limit_used_of	%1$s of %2$s	%1$s از %2$s
+sx_limit_always_block	Always blocked	همیشه مسدود
+sx_limit_blocked_until	Blocked until %1$s	مسدود تا %1$s
+sx_limit_needs_engine	Needs the advanced tunnel	نیازمند تونل پیشرفته
+sx_limit_edit_app_title	App limit	محدودیت برنامه
+sx_limit_edit_site_title	Website limit	محدودیت وب‌سایت
+sx_limit_choose_app	Choose an app	انتخاب برنامه
+sx_already_limited	Already limited	قبلاً محدود شده
+sx_limit_site_name	Name	نام
+sx_limit_domains	Domains	دامنه‌ها
+sx_limit_domains_support	Separate with commas or new lines. Subdomains are included.	با ویرگول یا خط جدید جدا کنید. زیردامنه‌ها هم شامل می‌شوند.
+sx_limit_domains_error	Enter at least one valid domain, like youtube.com.	حداقل یک دامنهٔ معتبر مثل youtube.com وارد کنید.
+sx_limit_quick	Quick picks	انتخاب سریع
+sx_limit_amount	Amount	مقدار
+sx_limit_period	Resets	بازنشانی
+sx_limit_reset_note	Counters reset at midnight (your local time).	شمارنده‌ها نیمه‌شب (به وقت محلی شما) صفر می‌شوند.
+sx_period_daily	Daily	روزانه
+sx_period_weekly	Weekly	هفتگی
+sx_period_monthly	Monthly	ماهانه
+sx_limit_block_all	Block completely	مسدودسازی کامل
+sx_limit_block_all_sub	No data is allowed at all	هیچ داده‌ای مجاز نیست
+sx_limit_android_old	Per-app limits need Android 10 or newer. Website limits work on every version.	محدودیت برنامه‌ها به اندروید ۱۰ یا بالاتر نیاز دارد. محدودیت وب‌سایت‌ها در همه نسخه‌ها کار می‌کند.
+sx_preset_youtube	YouTube	یوتیوب
+sx_preset_instagram	Instagram	اینستاگرام
+sx_preset_tiktok	TikTok	تیک‌تاک
+sx_preset_netflix	Netflix	نتفلیکس
+sx_preset_telegram	Telegram	تلگرام
+sx_set_search	Search settings	جستجو در تنظیمات
+sx_set_nothing	No settings match your search.	تنظیماتی مطابق جستجوی شما نیست.
+sx_set_connection	Connection	اتصال
+sx_set_smart	Reconnect automatically	اتصال دوبارهٔ خودکار
+sx_set_smart_sub	If the connection drops, SatraNG reconnects, switching to the fastest server when needed.	اگر اتصال قطع شود، SatraNG دوباره وصل می‌شود و در صورت نیاز به سریع‌ترین سرور می‌رود.
+sx_set_quick	Connect when the app opens	اتصال هنگام باز کردن برنامه
+sx_set_quick_sub	Starts the VPN as soon as you open SatraNG.	به محض باز کردن SatraNG، VPN روشن می‌شود.
+sx_set_killswitch	Kill switch	قطع‌کنندهٔ اضطراری (Kill switch)
+sx_set_killswitch_sub	Turn on “Always-on VPN” and “Block connections without VPN” in Android’s VPN settings.	در تنظیمات VPN اندروید، «VPN همیشه روشن» و «مسدود کردن اتصال‌های بدون VPN» را روشن کنید.
+sx_set_mode	Mode	حالت
+sx_set_mode_sub	VPN covers the whole phone. Proxy only covers apps you point at SatraNG.	VPN کل گوشی را پوشش می‌دهد. فقط پروکسی تنها برنامه‌هایی را که به SatraNG وصل کنید.
+sx_set_mode_vpn	VPN	VPN
+sx_set_mode_proxy	Proxy only	فقط پروکسی
+sx_set_mode_vpn_sub	Protects the whole phone	کل گوشی را محافظت می‌کند
+sx_set_mode_proxy_sub	Only apps set to use the local proxy	فقط برنامه‌هایی که از پروکسی محلی استفاده می‌کنند
+sx_set_apps	Apps and routing	برنامه‌ها و مسیریابی
+sx_set_split	Split tunneling	تونل‌کردن انتخابی
+sx_set_split_sub	Choose which apps use the VPN	انتخاب کنید کدام برنامه‌ها از VPN استفاده کنند
+sx_set_routing	Routing	مسیریابی
+sx_set_routing_sub	Send some sites directly, like Iranian or Russian ones	بعضی سایت‌ها، مثل ایرانی یا روسی، مستقیم باز شوند
+sx_set_appearance	Appearance	ظاهر
+sx_set_theme	Theme	پوسته
+sx_theme_system	System	سیستم
+sx_theme_light	Light	روشن
+sx_theme_dark	Dark	تیره
+sx_set_language	Language	زبان
+sx_set_speed_notif	Speed in notification	سرعت در اعلان
+sx_set_speed_notif_sub	Shows live upload and download speed in the notification.	سرعت لحظه‌ای آپلود و دانلود را در اعلان نشان می‌دهد.
+sx_set_tools	Tools	ابزارها
+sx_set_log	Connection log	گزارش اتصال
+sx_set_log_sub	See what happened if something goes wrong	اگر مشکلی پیش آمد، ببینید چه اتفاقی افتاده
+sx_set_backup	Backup and restore	پشتیبان‌گیری و بازیابی
+sx_set_backup_sub	Save or restore all your servers and settings	ذخیره یا بازیابی همه سرورها و تنظیمات
+sx_set_update	Check for updates	بررسی به‌روزرسانی
+sx_set_about	About	درباره
+sx_set_advanced	Advanced	پیشرفته
+sx_set_show_advanced	Show advanced settings	نمایش تنظیمات پیشرفته
+sx_set_advanced_footer	Defaults work for almost everyone. Change these only if you know why.	پیش‌فرض‌ها برای تقریباً همه مناسب است. فقط اگر دلیلش را می‌دانید تغییر دهید.
+sx_adv_tunnel	Tunnel and DNS	تونل و DNS
+sx_adv_core	Core engine	موتور هسته
+sx_adv_mux	Multiplexing	مالتی‌پلکس (Mux)
+sx_adv_fragment	Fragmentation	قطعه‌قطعه‌سازی (Fragment)
+sx_adv_observatory	Observatory	رصدخانه (Observatory)
+sx_adv_more	More	موارد بیشتر
+sx_adv_assets	Geo files (geoip / geosite)	فایل‌های جغرافیایی (geoip / geosite)
+sx_limit_reset	Reset usage	صفر کردن مصرف
+sx_limit_reset_sub	%1$s used this period. Starts again from zero.	%1$s در این دوره مصرف شده. از صفر شروع می‌شود.
+sx_limit_delete_msg	The limit and its counter are removed. Nothing is blocked any more.	محدودیت و شمارنده‌اش حذف می‌شود و دیگر چیزی مسدود نیست.
+sx_usage_apps_none_yet	No VPN traffic recorded for apps yet. Connect and it shows up within a minute.	هنوز ترافیک VPN برای برنامه‌ها ثبت نشده. وصل شوید؛ ظرف یک دقیقه نمایش داده می‌شود.
+sx_locating_servers	Finding where your servers are…	در حال یافتن موقعیت سرورها…
+sx_geo_locating	Finding location…	در حال یافتن موقعیت…
+sx_geo_failed	Location not found	موقعیت پیدا نشد
+sx_geo_retry	Retry	تلاش دوباره
+sx_home_empty_add_msg	Copy the subscription link or config your provider sent you, then tap Add. SatraNG works out the rest.	لینک اشتراک یا کانفیگی را که از ارائه‌دهنده گرفته‌اید کپی کنید و «افزودن» را بزنید. بقیه‌اش با SatraNG.
+sx_add_more_ways	More ways to add	راه‌های دیگر افزودن
+sx_add_sheet_msg	Add copies from the clipboard automatically. Use these if your link is somewhere else.	دکمهٔ افزودن خودش از کلیپ‌بورد می‌خواند. اگر لینک جای دیگری است، از این‌ها استفاده کنید.
+sx_add_subscription_sub	Type or edit a link by hand	وارد کردن یا ویرایش دستی لینک
+sx_total	Total	مجموع
+sx_add_nothing	Nothing to add in the clipboard. Copy a link or config first.	چیزی برای افزودن در کلیپ‌بورد نیست. اول یک لینک یا کانفیگ کپی کنید.
+sx_add_sub_fetching	Subscription found. Getting servers…	اشتراک پیدا شد. در حال دریافت سرورها…
+sx_add_sub_empty	Subscription added, but its servers couldn’t be downloaded yet. Pull down in Subscriptions to retry.	اشتراک اضافه شد ولی هنوز سرورهایش دریافت نشد. در «اشتراک‌ها» صفحه را پایین بکشید تا دوباره تلاش شود.
+sx_add_sub_exists	This subscription was already added. It has been updated.	این اشتراک قبلاً اضافه شده بود و به‌روز شد.
+sx_smart_none	No server answered. Check your connection or update the subscription.	هیچ سروری پاسخ نداد. اتصال را بررسی یا اشتراک را به‌روز کنید.
+sx_smart_connect	Connect to the fastest	اتصال به سریع‌ترین
+sx_smart_connect_sub	Tests your servers and connects to the quickest, most stable one.	سرورها را می‌سنجد و به سریع‌ترین و پایدارترین وصل می‌شود.
+sx_smart_finding	Finding the fastest server…	در حال یافتن سریع‌ترین سرور…
+sx_smart_chosen	Connecting to %1$s · %2$d ms	اتصال به %1$s · %2$d میلی‌ثانیه
+sx_topup_mb	+%1$s MB	+%1$s مگابایت
+sx_topup_gb	+%1$s GB	+%1$s گیگابایت
+sx_notif_topup_hint	Tap an amount to allow more right away.	برای اجازهٔ حجم بیشتر، همین حالا روی یک مقدار بزنید.
+sx_cat_social	Social	شبکهٔ اجتماعی
+sx_cat_messaging	Messaging	پیام‌رسان
+sx_cat_video	Video & music	ویدیو و موسیقی
+sx_cat_games	Games	بازی
+sx_cat_browsers	Browsers	مرورگر
+sx_cat_vpn	VPN & proxy	VPN و پروکسی
+sx_cat_shopping	Shopping	خرید
+sx_cat_productivity	Work & productivity	کار و بهره‌وری
+sx_cat_other	Other	سایر
+sx_cat_system	System	سیستمی
+sx_show_system_apps	Show system apps	نمایش برنامه‌های سیستمی
+sx_cat_limit_all	Limit all	محدود کردن همه
+sx_limit_edit_cat_title	Category limit	محدودیت دسته
+sx_limit_cat_note	All apps in this group share one counter. Apps with their own limit are counted there instead.	همهٔ برنامه‌های این دسته یک شمارندهٔ مشترک دارند. برنامه‌ای که محدودیت جداگانه دارد، همان‌جا شمرده می‌شود.
+sx_speed_test	Speed test	تست سرعت
+sx_speed_test_all	Speed test all	تست سرعت همه
+sx_speed_cancel	Stop speed test	توقف تست سرعت
+sx_speed_testing	Testing speed…	در حال تست سرعت…
+sx_speed_failed	Speed test failed	تست سرعت ناموفق
+sx_speed_all_started	Testing the quickest servers one by one (up to 8 MB each)…	سریع‌ترین سرورها یکی‌یکی تست می‌شوند (هر کدام تا ۸ مگابایت)…
+sx_speed_test_sub	Downloads up to 8 MB through this server	تا ۸ مگابایت از طریق این سرور دانلود می‌کند
+sx_sort_speed	Speed	سرعت
+sx_mbps	%1$s Mbps	%1$s مگابیت
+sx_badge_tunnel	Tunnel	تانل
+sx_engine_applied	Reconnecting to apply the change	برای اعمال تغییر دوباره وصل می‌شویم
+sx_split_all	All apps	همه برنامه‌ها
+sx_split_only	Only selected	فقط انتخاب‌شده‌ها
+sx_split_except	All except	همه به‌جز
+sx_split_all_note	Every app on this phone uses the VPN.	همه برنامه‌های این گوشی از VPN استفاده می‌کنند.
+sx_split_only_note	Only the apps you tick use the VPN. Everything else connects directly.	فقط برنامه‌هایی که تیک می‌زنید از VPN استفاده می‌کنند؛ بقیه مستقیم وصل می‌شوند.
+sx_split_except_note	The apps you tick connect directly. Everything else uses the VPN.	برنامه‌هایی که تیک می‌زنید مستقیم وصل می‌شوند؛ بقیه از VPN استفاده می‌کنند.
+sx_split_none_title	No apps found	برنامه‌ای پیدا نشد
+sx_split_none_msg	Try a different name.	نام دیگری را امتحان کنید.
+sx_routing_title	Routing	مسیریابی
+sx_routing_preset	Preset	پیش‌تنظیم
+sx_routing_iran	Iran	ایران
+sx_routing_iran_note	Iranian sites go direct, everything else through the VPN	سایت‌های ایرانی مستقیم، بقیه از طریق VPN
+sx_routing_russia	Russia	روسیه
+sx_routing_russia_note	Russian sites go direct, everything else through the VPN	سایت‌های روسی مستقیم، بقیه از طریق VPN
+sx_routing_custom_note	You are using your own rules. Pick a preset to start over.	از قوانین خودتان استفاده می‌کنید. برای شروع دوباره یک پیش‌تنظیم انتخاب کنید.
+sx_routing_rules	Rules	قوانین
+sx_routing_rules_note	Rules are checked from top to bottom. Touch and hold to reorder; tap to edit.	قوانین از بالا به پایین بررسی می‌شوند. برای جابه‌جایی نگه دارید؛ برای ویرایش بزنید.
+sx_routing_advanced	Advanced	پیشرفته
+sx_routing_apply_title	Use the %1$s preset?	پیش‌تنظیم %1$s استفاده شود؟
+sx_routing_apply_msg	Your current rules are replaced. Locked rules stay.	قوانین فعلی جایگزین می‌شوند. قوانین قفل‌شده می‌مانند.
+sx_routing_apply	Use preset	استفاده
+sx_routing_tag_direct	Direct	مستقیم
+sx_routing_tag_proxy	VPN	VPN
+sx_routing_tag_block	Block	مسدود
+sx_logs_title	Logs	گزارش‌ها
+sx_logs_empty_title	No log lines	گزارشی نیست
+sx_logs_empty_msg	Refresh to read the latest app and core log. Long-press a line to copy it.	برای خواندن آخرین گزارش برنامه و هسته، تازه‌سازی کنید. برای کپی یک خط، آن را نگه دارید.
+sx_logs_copied	Line copied	خط کپی شد
+sx_logs_clear	Clear log	پاک کردن گزارش
+sx_apps_none_found_msg	No app matches your search.	برنامه‌ای مطابق جستجوی شما نیست.
+sx_tasker_title	Tasker action	فرمان Tasker
+sx_tasker_pick	Config	کانفیگ
+sx_tasker_default	Current selection	انتخاب فعلی
+sx_chain_title	Proxy chain	زنجیره پروکسی
+sx_chain_footer	Traffic goes through these configs in order. Long-press a number to reorder.	ترافیک به ترتیب از این کانفیگ‌ها عبور می‌کند. برای جابه‌جایی، شماره را نگه دارید.
+sx_assets_files	Files	فایل‌ها
+sx_assets_footer	Geo files decide which sites go direct. Download refreshes them from the source above.	فایل‌های Geo مشخص می‌کنند کدام سایت‌ها مستقیم باز شوند. دانلود، آن‌ها را از منبع بالا تازه می‌کند.
+sx_chain_name	Name	نام
+sx_chain_hop	Hop %1$d	گام %1$d
+sx_server_used	%1$s used	%1$s مصرف
+sx_coach_pull_ping	Pull down to ping every config	برای پینگ همه کانفیگ‌ها، صفحه را به پایین بکشید
+sx_dismiss	Dismiss	بستن
+sx_set_sub_on_open	Update subscriptions on open	به‌روزرسانی اشتراک‌ها هنگام باز کردن
+sx_set_sub_on_open_sub	Also refreshes in the background at each subscription's interval	در پس‌زمینه هم طبق بازه هر اشتراک تازه می‌شوند
+sx_proxy_local	Local proxy	پروکسی محلی
+sx_proxy_socks	SOCKS5	SOCKS5
+sx_proxy_http	HTTP	HTTP
+sx_proxy_mixed	SOCKS5 + HTTP	SOCKS5 + HTTP
+sx_proxy_copied	Address copied	آدرس کپی شد
+sx_proxy_tap_copy	Set this in the app you want to route. Tap to copy.	این را در برنامه‌ای که می‌خواهید از پروکسی رد شود وارد کنید. برای کپی ضربه بزنید.
+sx_proxy_lan	Also reachable from your local network	از شبکه محلی شما هم در دسترس است
+sx_proxy_user	User: %1$s	کاربر: %1$s
+sx_mode_reconnect_title	Reconnect to switch mode?	برای تغییر حالت دوباره وصل شود؟
+sx_mode_reconnect_msg	You're connected. Reconnect now to use the new mode, or keep this connection until the next connect.	اکنون وصل هستید. برای استفاده از حالت جدید اکنون دوباره وصل شوید، یا این اتصال را تا اتصال بعدی نگه دارید.
+sx_mode_reconnect	Reconnect	اتصال دوباره
+sx_later	Later	بعداً
+sx_reconnected	Reconnected	دوباره وصل شد

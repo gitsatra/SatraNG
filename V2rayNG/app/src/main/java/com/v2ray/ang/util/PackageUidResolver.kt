@@ -15,6 +15,9 @@ object PackageUidResolver {
 
     fun packageNamesToUids(context: Context, packageNames: List<String>): List<String> {
         return packageNames.mapNotNull { pkg ->
+            // Usage-limit and some routing paths already store numeric UIDs; do not look them up
+            // as package names (that fails and would wipe the process rule).
+            if (pkg == "-1" || (pkg.isNotEmpty() && pkg.all { it.isDigit() })) return@mapNotNull pkg
             packageUidCache[pkg] ?: resolveUid(context, pkg)?.also { uid ->
                 packageUidCache[pkg] = uid
             }

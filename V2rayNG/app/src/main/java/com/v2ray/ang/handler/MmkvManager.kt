@@ -69,13 +69,13 @@ object MmkvManager {
         ) = Unit
     }
 
-    private val mainStorage by lazy { MMKV.mmkvWithID(ID_MAIN, MMKV.MULTI_PROCESS_MODE) }
-    private val profileFullStorage by lazy { MMKV.mmkvWithID(ID_PROFILE_FULL_CONFIG, MMKV.MULTI_PROCESS_MODE) }
-    private val serverRawStorage by lazy { MMKV.mmkvWithID(ID_SERVER_RAW, MMKV.MULTI_PROCESS_MODE) }
+    private val mainStorage by lazy { openStore(ID_MAIN) }
+    private val profileFullStorage by lazy { openStore(ID_PROFILE_FULL_CONFIG) }
+    private val serverRawStorage by lazy { openStore(ID_SERVER_RAW) }
     private val serverAffStorage by lazy { MMKV.mmkvWithID(ID_SERVER_AFF, MMKV.MULTI_PROCESS_MODE) }
-    private val subStorage by lazy { MMKV.mmkvWithID(ID_SUB, MMKV.MULTI_PROCESS_MODE) }
+    private val subStorage by lazy { openStore(ID_SUB) }
     private val assetStorage by lazy { MMKV.mmkvWithID(ID_ASSET, MMKV.MULTI_PROCESS_MODE) }
-    private val settingsStorage by lazy { MMKV.mmkvWithID(ID_SETTING, MMKV.MULTI_PROCESS_MODE) }
+    private val settingsStorage by lazy { openStore(ID_SETTING) }
 
     private inline fun <T> withProfileIndexLock(block: () -> T): T {
         return synchronized(mainStorage) {
@@ -147,7 +147,33 @@ object MmkvManager {
             logLevel,
             recoveryHandler
         )
+        // At-rest encryption of configs, subscriptions and settings (credentials). Must run
+        // before any of those stores is opened in this process.
+        cryptKey = try {
+            when (val r = AtRestCryptoAndroid.ensure(context, ENCRYPTED_IDS)) {
+                is AtRestCrypto.Outcome.Encrypted -> {
+                    if (r.migratedNow) Log.i(TAG, "MMKV stores encrypted at rest")
+                    r.key
+                }
+                is AtRestCrypto.Outcome.Plain -> {
+                    Log.w(TAG, "MMKV stores stay plaintext: ${r.reason}")
+                    null
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "At-rest crypto setup failed; staying plaintext", e)
+            null
+        }
     }
+
+    private fun openStore(id: String): MMKV = cryptKey?.let { MMKV.mmkvWithID(id, MMKV.MULTI_PROCESS_MODE, it) }
+        ?: MMKV.mmkvWithID(id, MMKV.MULTI_PROCESS_MODE)
+
+    /** Crypt key for the sensitive stores (null = plaintext). */
+    @Volatile
+    private var cryptKey: String? = null
+
+    private val ENCRYPTED_IDS by lazy { listOf(ID_MAIN, ID_PROFILE_FULL_CONFIG, ID_SERVER_RAW, ID_SUB, ID_SETTING) }
 
     private fun recoverFromStorageError(mmapID: String, error: String): MMKVRecoverStrategic {
         Log.e(TAG, "MMKV $error failed for $mmapID; attempting data recovery")
@@ -241,6 +267,25 @@ object MmkvManager {
         return allServers
     }
 
+    /**
+     * Servers the user can use right now: everything except configs of disabled subscriptions.
+     * The Servers list, smart connect and background exit detection only look at these.
+     */
+    fun decodeActiveServerList(): MutableList<String> {
+        val disabled = decodeSubscriptions().filter { !it.subscription.enabled }.mapTo(HashSet()) { it.guid }
+        if (disabled.isEmpty()) return decodeAllServerList()
+        val result = mutableListOf<String>()
+        val subsList = decodeSubsList()
+        if (!subsList.contains(DEFAULT_SUBSCRIPTION_ID)) result.addAll(decodeServerList(DEFAULT_SUBSCRIPTION_ID))
+        subsList.filter { it !in disabled }.forEach { result.addAll(decodeServerList(it)) }
+        return result
+    }
+
+    /** False when the config belongs to a disabled subscription. */
+    fun isServerActive(guid: String): Boolean {
+        val subId = decodeServerConfig(guid)?.subscriptionId?.takeIf { it.isNotBlank() } ?: return true
+        return decodeSubscription(subId)?.enabled != false
+    }
 
     /**
      * Decodes the server configuration.
@@ -319,6 +364,31 @@ object MmkvManager {
             } else {
                 decodeServerList(subscriptionId).toList()
             }
+            // Same config as before (refresh): keep its guid so per-config data survives.
+            val reuse = if (replacedServers.isEmpty()) emptyMap() else ProfileReplacement.matchExisting(
+                profiles,
+                replacedServers.mapNotNull { g -> decodeServerConfig(g)?.let { g to it } }.toMap(),
+            )
+            if (reuse.isNotEmpty()) {
+                return@withProfileIndexLock saveServerProfilesLocked(
+                    profiles = profiles.entries.associate { (k, v) -> (reuse[k] ?: k) to v },
+                    rawConfigs = rawConfigs.entries.associate { (k, v) -> (reuse[k] ?: k) to v },
+                    subscriptionId = subscriptionId,
+                    replacedServers = replacedServers,
+                )
+            }
+            saveServerProfilesLocked(profiles, rawConfigs, subscriptionId, replacedServers, append)
+        }
+    }
+
+    private fun saveServerProfilesLocked(
+        profiles: Map<String, ProfileItem>,
+        rawConfigs: Map<String, String>,
+        subscriptionId: String,
+        replacedServers: List<String>,
+        append: Boolean = false,
+    ) {
+        run {
             val previousSelection = getSelectServer()
             val selectedProfile = if (!append &&
                 previousSelection != null &&
@@ -351,7 +421,9 @@ object MmkvManager {
                 decodeServerList(subscriptionId)
             } else {
                 replacedServers.filter { guid ->
-                    decodeServerConfig(guid)?.configType?.isGroupType() == true
+                    val cfg = decodeServerConfig(guid)
+                    // Group profiles and configs the user added by hand (no subscription id) survive a refresh.
+                    cfg?.configType?.isGroupType() == true || (cfg != null && cfg.subscriptionId.isBlank())
                 }.toMutableList()
             }
             val indexedServers = serverList.toHashSet()
@@ -370,7 +442,7 @@ object MmkvManager {
                     "Failed to update selected profile",
                 )
             }
-            if (replacedServers.isEmpty()) return@withProfileIndexLock
+            if (replacedServers.isEmpty()) return@run
 
             val protectedServer = replacementSelection ?: previousSelection
             val referencedByOtherGroups = decodeServersReferencedByOtherGroups(subscriptionId)
@@ -487,6 +559,63 @@ object MmkvManager {
         }
         val aff = decodeServerAffiliationInfo(guid) ?: ServerAffiliationInfo()
         aff.testDelayMillis = testResult
+        serverAffStorage.encode(guid, JsonUtil.toJson(aff))
+    }
+
+    fun encodeServerGeo(
+        guid: String,
+        countryCode: String?,
+        countryName: String?,
+        resolvedIp: String?,
+        exitIpVerified: Boolean = false,
+    ) {
+        if (guid.isBlank()) return
+        val aff = decodeServerAffiliationInfo(guid) ?: ServerAffiliationInfo()
+        aff.countryCode = countryCode
+        aff.countryName = countryName
+        aff.resolvedIp = resolvedIp
+        aff.exitIpVerified = exitIpVerified
+        aff.geoUpdatedAt = System.currentTimeMillis()
+        serverAffStorage.encode(guid, JsonUtil.toJson(aff))
+    }
+
+    fun encodeServerSpeed(guid: String, bps: Long) {
+        if (guid.isBlank()) return
+        val aff = decodeServerAffiliationInfo(guid) ?: ServerAffiliationInfo()
+        aff.speedBps = bps
+        aff.speedAt = System.currentTimeMillis()
+        serverAffStorage.encode(guid, JsonUtil.toJson(aff))
+    }
+
+    /** Stores the entry (server address) country. Leaves the measured exit country untouched. */
+    fun encodeServerEntry(guid: String, countryCode: String?, ip: String?) {
+        if (guid.isBlank()) return
+        val aff = decodeServerAffiliationInfo(guid) ?: ServerAffiliationInfo()
+        val now = System.currentTimeMillis()
+        aff.entryAttemptAt = now
+        if (countryCode != null) {
+            aff.entryCountryCode = countryCode
+            aff.entryIp = ip
+            aff.entryUpdatedAt = now
+        }
+        serverAffStorage.encode(guid, JsonUtil.toJson(aff))
+    }
+
+    /** Records that a geo lookup was attempted now, so failures are retried with a backoff. */
+    fun markServerGeoAttempt(guid: String) {
+        if (guid.isBlank()) return
+        val aff = decodeServerAffiliationInfo(guid) ?: ServerAffiliationInfo()
+        aff.geoAttemptAt = System.currentTimeMillis()
+        serverAffStorage.encode(guid, JsonUtil.toJson(aff))
+    }
+
+    fun isServerFavorite(guid: String): Boolean = decodeServerAffiliationInfo(guid)?.favorite == true
+
+    fun setServerFavorite(guid: String, favorite: Boolean) {
+        if (guid.isBlank()) return
+        val aff = decodeServerAffiliationInfo(guid) ?: ServerAffiliationInfo()
+        if (aff.favorite == favorite) return
+        aff.favorite = favorite
         serverAffStorage.encode(guid, JsonUtil.toJson(aff))
     }
 
@@ -653,7 +782,8 @@ object MmkvManager {
         decodeSubsList().forEach { key ->
             val json = subStorage.decodeString(key)
             if (!json.isNullOrBlank()) {
-                val item = JsonUtil.fromJsonSafe(json, SubscriptionItem::class.java) ?: SubscriptionItem()
+                val item = (JsonUtil.fromJsonSafe(json, SubscriptionItem::class.java) ?: SubscriptionItem())
+                    .ensureDisplayDefaults()
                 subscriptions.add(SubscriptionCache(key, item))
             }
         }
@@ -681,10 +811,29 @@ object MmkvManager {
      * @param subItem The subscription item.
      */
     fun encodeSubscription(guid: String, subItem: SubscriptionItem) {
-        val key = guid.ifBlank { Utils.getUuid() }
+        val existing = decodeSubsList().map { id ->
+            val item = decodeSubscription(id)
+            SubscriptionIdentity.ExistingSub(id, item?.remarks.orEmpty(), item?.url.orEmpty())
+        }
+        val resolved = SubscriptionIdentity.resolveNewId(guid, existing)
+        val key = resolved ?: guid.ifBlank { Utils.getUuid() }
         subStorage.encode(key, JsonUtil.toJson(subItem))
 
         val subsList = decodeSubsList()
+        // First real sub claiming Default: drop leftover empty placeholders.
+        if (guid.isBlank() && resolved != null) {
+            val cleaned = subsList.filter { id ->
+                id == key || !SubscriptionIdentity.isPlaceholder(
+                    existing.find { it.id == id }
+                        ?: SubscriptionIdentity.ExistingSub(id, "", ""),
+                )
+            }.toMutableList()
+            if (!cleaned.contains(key)) cleaned.add(0, key)
+            if (cleaned != subsList) {
+                encodeSubsList(cleaned)
+                return
+            }
+        }
         if (!subsList.contains(key)) {
             subsList.add(key)
             encodeSubsList(subsList)
@@ -699,7 +848,7 @@ object MmkvManager {
      */
     fun decodeSubscription(subscriptionId: String): SubscriptionItem? {
         val json = subStorage.decodeString(subscriptionId) ?: return null
-        return JsonUtil.fromJsonSafe(json, SubscriptionItem::class.java)
+        return JsonUtil.fromJsonSafe(json, SubscriptionItem::class.java)?.ensureDisplayDefaults()
     }
 
     /**
@@ -861,6 +1010,13 @@ object MmkvManager {
      */
     fun encodeSettings(key: String, value: Boolean): Boolean {
         return settingsStorage.encode(key, value)
+    }
+
+    /**
+     * Returns whether a settings key exists in storage (distinct from a stored false/empty value).
+     */
+    fun containsSettingsKey(key: String): Boolean {
+        return settingsStorage.containsKey(key)
     }
 
     /**

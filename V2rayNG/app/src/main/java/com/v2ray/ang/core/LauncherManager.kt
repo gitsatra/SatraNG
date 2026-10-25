@@ -11,6 +11,8 @@ import com.v2ray.ang.extension.toast
 import com.v2ray.ang.extension.toastError
 import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.handler.SettingsManager
+import com.v2ray.ang.handler.UidTunnelMeter
+import com.v2ray.ang.handler.UsageLimitEngine
 import com.v2ray.ang.helper.MessageHelper
 import com.v2ray.ang.root.RootManager
 import com.v2ray.ang.service.CoreProxyOnlyService
@@ -26,7 +28,19 @@ object LauncherManager {
             context.toast(R.string.app_tile_first_use)
             return false
         }
+        if (ToggleSurfaces.needsVpnConsent(context)) {
+            // Only an activity can show Android's VPN consent prompt: hand over to the app.
+            LogUtil.i(AppConfig.TAG, "LauncherManager: VPN consent needed, opening the app")
+            return try {
+                context.startActivity(ToggleSurfaces.openAppIntent(context))
+                false
+            } catch (e: Exception) {
+                context.toast(R.string.sx_toggle_open_app)
+                false
+            }
+        }
         try {
+            MmkvManager.encodeSettings(AppConfig.PREF_USER_REQUESTED_STOP, false)
             startContextService(context)
         } catch (e: Exception) {
             LogUtil.e(AppConfig.TAG, "LauncherManager: ${e.message}", e)
@@ -44,6 +58,7 @@ object LauncherManager {
         }
 
         try {
+            MmkvManager.encodeSettings(AppConfig.PREF_USER_REQUESTED_STOP, false)
             startContextService(context)
         } catch (e: Exception) {
             LogUtil.e(AppConfig.TAG, "LauncherManager: ${e.message}", e)
@@ -52,13 +67,34 @@ object LauncherManager {
     }
 
     fun stopService(context: Context) {
-        //context.toast(R.string.toast_services_stop)
+        // User-initiated stop (UI, QS, notification, widget) — blocks Auto reconnect.
+        MmkvManager.encodeSettings(AppConfig.PREF_USER_REQUESTED_STOP, true)
         MessageHelper.sendMsg2Service(context, AppConfig.MSG_STATE_STOP, "")
+    }
+
+    /** Re-applies usage rules / routing policy to a running core without dropping the tunnel. */
+    fun reloadPolicy(context: Context) {
+        MessageHelper.sendMsg2Service(context, AppConfig.MSG_STATE_RELOAD, "")
     }
 
     /** Restarts the active daemon without starting a stopped service. */
     fun restartService(context: Context) {
         MessageHelper.sendMsg2Service(context, AppConfig.MSG_STATE_RESTART, "")
+    }
+
+    fun startServiceClearingUserStop(context: Context, guid: String? = null) {
+        MmkvManager.encodeSettings(AppConfig.PREF_USER_REQUESTED_STOP, false)
+        startService(context, guid)
+    }
+
+    /**
+     * Restarts the tunnel only when one is running and reports it, so a settings change that needs
+     * a fresh tunnel is applied quietly (callers show a tiny toast in [onRestarted]).
+     */
+    fun restartIfRunning(context: Context, onRestarted: () -> Unit = {}) {
+        MessageHelper.sendMsg2ServiceForResult(context, AppConfig.MSG_STATE_RESTART, "") { handled ->
+            if (handled) onRestarted()
+        }
     }
 
     /** Restarts the active daemon, or delegates to the caller's permission-aware start flow. */
@@ -94,6 +130,9 @@ object LauncherManager {
         }
 
         SettingsManager.refreshRuntimeSocksPort()
+        // Per-app tunnel metering + APP limits need Xray process/UID routing.
+        UidTunnelMeter.ensureEngine()
+        UsageLimitEngine.ensureAppEnforcementForStoredRules()
 
         if (config.insecure == true && config.pinnedCA256.isNullOrEmpty()) {
             context.toastError(R.string.toast_allow_insecure_deprecated)

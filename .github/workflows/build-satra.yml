@@ -1,0 +1,88 @@
+name: Build SatraNG APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [satra-build]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          log-accepted-android-sdk-licenses: false
+          cmdline-tools-version: '14742923'
+          packages: 'platforms;android-37.0 build-tools;37.0.0 platform-tools'
+
+      - name: Install NDK
+        run: |
+          echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
+            --channel=0 \
+            --install "ndk;30.0.16248370"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/30.0.16248370" >> $GITHUB_ENV
+          sed -i '10i\
+          \
+              ndkVersion = "30.0.16248370"' ${{ github.workspace }}/V2rayNG/app/build.gradle.kts
+
+      - name: Build libhevtun
+        run: bash compile-hevtun.sh
+
+      - name: Copy libhevtun
+        run: cp -r ${{ github.workspace }}/libs ${{ github.workspace }}/V2rayNG/app
+
+      - name: Download libv2ray.aar
+        run: |
+          pushd AndroidLibXrayLite
+          CURRENT_TAG=$(git describe --tags --abbrev=0)
+          echo "CURRENT_TAG=$CURRENT_TAG"
+          popd
+          mkdir -p V2rayNG/app/libs
+          gh release download "$CURRENT_TAG" -R 2dust/AndroidLibXrayLite -p libv2ray.aar -D V2rayNG/app/libs
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Build release APK (arm64)
+        env:
+          SATRA_KEYSTORE_B64: ${{ secrets.SATRA_KEYSTORE_B64 }}
+          SATRA_STORE_PASSWORD: ${{ secrets.SATRA_STORE_PASSWORD }}
+          SATRA_KEY_PASSWORD: ${{ secrets.SATRA_KEY_PASSWORD }}
+        run: |
+          cd ${{ github.workspace }}/V2rayNG
+          mkdir -p keystore
+          echo "sdk.dir=${ANDROID_HOME}" > local.properties
+          chmod 755 gradlew
+          if [ -n "$SATRA_KEYSTORE_B64" ]; then echo "$SATRA_KEYSTORE_B64" | base64 -d > keystore/satra-release.p12; fi
+          ./gradlew assemblePlaystoreRelease -PABI_FILTERS=arm64-v8a --stacktrace
+
+      - name: Collect APK
+        run: |
+          mkdir -p out
+          find V2rayNG/app/build/outputs/apk -name '*.apk' -print -exec cp {} out/ \;
+          ls -lah out
+          APK=$(ls out/*.apk | head -1)
+          cp "$APK" out/SatraNG-arm64-release.apk
+          ls -lah out/
+
+      - name: Upload SatraNG APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: SatraNG-apk
+          path: out/SatraNG-arm64-release.apk
+          if-no-files-found: error

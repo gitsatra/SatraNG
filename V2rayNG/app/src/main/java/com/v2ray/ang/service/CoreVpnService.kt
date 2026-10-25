@@ -18,9 +18,13 @@ import com.v2ray.ang.contracts.ServiceControl
 import com.v2ray.ang.contracts.Tun2SocksControl
 import com.v2ray.ang.core.CoreServiceManager
 import com.v2ray.ang.handler.AppLocaleManager
+import com.v2ray.ang.handler.IranApps
 import com.v2ray.ang.handler.MmkvManager
+import com.v2ray.ang.handler.RoutingPolicy
 import com.v2ray.ang.handler.NotificationManager
 import com.v2ray.ang.handler.SettingsManager
+import com.v2ray.ang.handler.UidTunnelMeter
+import com.v2ray.ang.handler.UsageRulesRepository
 import com.v2ray.ang.root.RootLanSharing
 import com.v2ray.ang.util.LogUtil
 import com.v2ray.ang.util.Utils
@@ -128,6 +132,30 @@ class CoreVpnService : VpnService(), ServiceControl {
         return super<VpnService>.setUnderlyingNetworks(networks)
     }
 
+    /**
+     * Rebuilds the TUN so client sockets die, then restarts hev if needed. Does not stop the
+     * VpnService (no permission prompt, no underlying-network leak window like a full restart).
+     */
+    override fun recreateVpnInterfaceForPolicy(): ParcelFileDescriptor? {
+        if (!isRunning) {
+            LogUtil.w(AppConfig.TAG, "StartCore-VPN: recreate TUN skipped (not running)")
+            return null
+        }
+        LogUtil.w(AppConfig.TAG, "StartCore-VPN: recreating TUN for policy enforcement")
+        try {
+            tun2SocksService?.stopTun2Socks()
+            tun2SocksService = null
+        } catch (e: Exception) {
+            LogUtil.w(AppConfig.TAG, "StartCore-VPN: stop tun2socks before recreate failed", e)
+        }
+        if (!configureVpnService()) {
+            LogUtil.e(AppConfig.TAG, "StartCore-VPN: recreate TUN failed")
+            return null
+        }
+        runTun2socks()
+        return mInterface
+    }
+
     override fun attachBaseContext(newBase: Context?) {
         val context = newBase?.let(AppLocaleManager::localizedContext)
         super.attachBaseContext(context)
@@ -182,6 +210,11 @@ class CoreVpnService : VpnService(), ServiceControl {
         try {
             mInterface = builder.establish()!!
             isRunning = true
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                // For the Security Check's kill-switch status (only the VPN service can ask).
+                MmkvManager.encodeSettings(com.v2ray.ang.handler.SecurityCheck.PREF_ALWAYS_ON, isAlwaysOn.toString())
+                MmkvManager.encodeSettings(com.v2ray.ang.handler.SecurityCheck.PREF_LOCKDOWN, isLockdownEnabled.toString())
+            }
             return true
         } catch (e: Exception) {
             LogUtil.e(AppConfig.TAG, "Failed to establish VPN interface", e)
@@ -214,8 +247,14 @@ class CoreVpnService : VpnService(), ServiceControl {
             builder.addRoute("0.0.0.0", 0)
         }
 
-        // Configure IPv6 if enabled
-        if (MmkvManager.decodeSettingsBool(AppConfig.PREF_IPV6_ENABLED) == true) {
+        // IPv6: when APP/CATEGORY limits are on, do not give the VPN an IPv6 address so dual-stack
+        // apps fall back to IPv4 (getConnectionOwnerUid is reliable there). Still claim ::/0 so
+        // native IPv6 cannot leak off-VPN. Same policy for every package — not per-app.
+        // Removal: restore full IPv6 tunnel when ProcessUidResolver is proven reliable for v6
+        // on all supported OEMs with process routing.
+        val ipv6User = MmkvManager.decodeSettingsBool(AppConfig.PREF_IPV6_ENABLED, AppConfig.DEFAULT_IPV6_ENABLED)
+        val appLimitsOn = UsageRulesRepository.rules().any { it.enabled && it.matchesApps }
+        if (ipv6User && !appLimitsOn) {
             builder.addAddress(vpnConfig.ipv6Client, 126)
             if (bypassLan) {
                 builder.addRoute("2000::", 3) // Currently only 1/8 of total IPv6 is in use
@@ -223,6 +262,8 @@ class CoreVpnService : VpnService(), ServiceControl {
             } else {
                 builder.addRoute("::", 0)
             }
+        } else {
+            builder.addRoute("::", 0)
         }
 
         // Configure DNS servers
@@ -247,7 +288,7 @@ class CoreVpnService : VpnService(), ServiceControl {
         // Android Q (API 29) and above: Configure metering and HTTP proxy
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             builder.setMetered(false)
-            if (MmkvManager.decodeSettingsBool(AppConfig.PREF_APPEND_HTTP_PROXY)) {
+            if (MmkvManager.decodeSettingsBool(AppConfig.PREF_APPEND_HTTP_PROXY, AppConfig.DEFAULT_APPEND_HTTP_PROXY)) {
                 builder.setHttpProxy(ProxyInfo.buildDirectProxy(LOOPBACK, SettingsManager.getHttpPort()))
             }
         }
@@ -265,6 +306,22 @@ class CoreVpnService : VpnService(), ServiceControl {
      */
     private fun configurePerAppProxy(builder: Builder) {
         val selfPackageName = BuildConfig.APPLICATION_ID
+        // Smart routing (Iran): Iranian apps (banks etc. detect a VPN) bypass the tunnel entirely.
+        // Only valid with a disallow list; "proxy only selected apps" already leaves them out.
+        val proxyOnlyMode = MmkvManager.decodeSettingsBool(AppConfig.PREF_PER_APP_PROXY) &&
+            !MmkvManager.decodeSettingsBool(AppConfig.PREF_BYPASS_APPS) &&
+            !MmkvManager.decodeSettingsStringSet(AppConfig.PREF_PER_APP_PROXY_SET).isNullOrEmpty()
+        if (!proxyOnlyMode && RoutingPolicy.smartOn() && RoutingPolicy.isIran(MmkvManager.decodeRoutingRulesets())) {
+            val bypass = IranApps.current(this)
+            bypass.forEach {
+                try {
+                    builder.addDisallowedApplication(it)
+                } catch (e: PackageManager.NameNotFoundException) {
+                    LogUtil.e(AppConfig.TAG, "StartCore-VPN: smart bypass app missing", e)
+                }
+            }
+            LogUtil.i(AppConfig.TAG, "StartCore-VPN: smart routing bypasses ${bypass.size} Iranian apps")
+        }
 
         // If per-app proxy is not enabled, disallow the VPN service's own package and return
         if (MmkvManager.decodeSettingsBool(AppConfig.PREF_PER_APP_PROXY) == false) {
@@ -303,7 +360,11 @@ class CoreVpnService : VpnService(), ServiceControl {
      * Starts the tun2socks process with the appropriate parameters.
      */
     private fun runTun2socks() {
+        // Same daemon-side force as CoreServiceManager.launchCore — per-app metering needs
+        // Xray TUN, not hev→socks (which only shows 127.0.0.1 to processFinder).
+        UidTunnelMeter.ensureEngine()
         if (SettingsManager.isUsingHevTun()) {
+            LogUtil.w(AppConfig.TAG, "StartCore-VPN: hev still on after ensureEngine; process UID metering disabled")
             tun2SocksService = TProxyService(
                 context = applicationContext,
                 vpnInterface = mInterface,
@@ -311,6 +372,7 @@ class CoreVpnService : VpnService(), ServiceControl {
                 restartCallback = { runTun2socks() }
             )
         } else {
+            LogUtil.w(AppConfig.TAG, "StartCore-VPN: Xray TUN (hev off) for process/UID metering")
             tun2SocksService = null
         }
 

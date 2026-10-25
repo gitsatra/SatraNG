@@ -12,6 +12,7 @@ import com.v2ray.ang.AppConfig
 import com.v2ray.ang.R
 import com.v2ray.ang.core.CoreServiceManager
 import com.v2ray.ang.core.LauncherManager
+import com.v2ray.ang.core.ToggleSurfaces
 import com.v2ray.ang.handler.AppLocaleManager
 import com.v2ray.ang.helper.MessageHelper
 import com.v2ray.ang.util.LogUtil
@@ -29,16 +30,19 @@ class QSTileService : TileService() {
      * @param state The state to set.
      */
     fun setState(state: Int) {
-        qsTile?.icon = Icon.createWithResource(applicationContext, R.drawable.ic_stat_name)
-        if (state == Tile.STATE_INACTIVE) {
-            qsTile?.state = Tile.STATE_INACTIVE
-            qsTile?.label = getString(R.string.app_name)
-        } else if (state == Tile.STATE_ACTIVE) {
-            qsTile?.state = Tile.STATE_ACTIVE
-            qsTile?.label = CoreServiceManager.getRunningServerName()
+        val tile = qsTile ?: return
+        val on = state == Tile.STATE_ACTIVE
+        tile.icon = Icon.createWithResource(applicationContext, R.drawable.ic_notif_satra)
+        tile.state = if (on) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
+        // Label = the config it connects to (or is connected through).
+        val name = if (on) CoreServiceManager.getRunningServerName().ifBlank { ToggleSurfaces.selectedName(this) }
+        else ToggleSurfaces.selectedName(this)
+        tile.label = name
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            tile.subtitle = getString(if (on) R.string.sx_toggle_on else R.string.sx_toggle_off)
         }
-
-        qsTile?.updateTile()
+        tile.contentDescription = "${getString(R.string.app_name)}: $name, ${getString(if (on) R.string.sx_toggle_on else R.string.sx_toggle_off)}"
+        tile.updateTile()
     }
 
     /**
@@ -79,14 +83,42 @@ class QSTileService : TileService() {
      */
     override fun onClick() {
         super.onClick()
-        when (qsTile.state) {
-            Tile.STATE_INACTIVE -> {
-                LauncherManager.startServiceFromToggle(this)
-            }
+        // Toggling works from the lock screen without unlocking. Only the VPN consent prompt
+        // needs the app, and that is the one case we ask to unlock.
+        if (qsTile?.state == Tile.STATE_ACTIVE) {
+            setStatePending(false)
+            LauncherManager.stopService(this)
+            return
+        }
+        if (ToggleSurfaces.needsVpnConsent(this)) {
+            unlockAndRun { openApp() }
+            return
+        }
+        setStatePending(true)
+        if (!LauncherManager.startServiceFromToggle(this)) setState(Tile.STATE_INACTIVE)
+    }
 
-            Tile.STATE_ACTIVE -> {
-                LauncherManager.stopService(this)
+    /** Immediate feedback while the core starts/stops; the broadcast then sets the final state. */
+    private fun setStatePending(on: Boolean) {
+        val tile = qsTile ?: return
+        tile.state = if (on) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            tile.subtitle = getString(if (on) R.string.sx_toggle_connecting else R.string.sx_toggle_off)
+        }
+        tile.updateTile()
+    }
+
+    @android.annotation.SuppressLint("StartActivityAndCollapseDeprecated")
+    private fun openApp() {
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= 34) {
+                startActivityAndCollapse(ToggleSurfaces.openAppPendingIntent(this, 41))
+            } else {
+                @Suppress("DEPRECATION")
+                startActivityAndCollapse(ToggleSurfaces.openAppIntent(this))
             }
+        } catch (e: Exception) {
+            LogUtil.e(AppConfig.TAG, "QSTileService: cannot open app", e)
         }
     }
 

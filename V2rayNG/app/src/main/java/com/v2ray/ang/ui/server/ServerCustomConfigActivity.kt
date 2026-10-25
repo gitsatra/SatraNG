@@ -440,6 +440,7 @@ fun ServerCustomConfigScreen(
                                 color = MaterialTheme.colorScheme.onSurface
                             ),
                             lineLimits = TextFieldLineLimits.MultiLine(),
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(autoCorrectEnabled = false),
                             cursorBrush = SolidColor(MaterialTheme.colorScheme.secondary),
                             onTextLayout = { resultProvider ->
                                 textLayoutResult = resultProvider()

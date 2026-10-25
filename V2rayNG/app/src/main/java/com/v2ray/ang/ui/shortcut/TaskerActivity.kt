@@ -3,40 +3,28 @@ package com.v2ray.ang.ui.shortcut
 import android.content.Intent
 import android.os.Bundle
 import android.text.TextUtils
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.R
 import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.ui.base.BaseComponentActivity
-import com.v2ray.ang.ui.compose.AppTopBar
-import com.v2ray.ang.ui.compose.NavigationBarsBottomPadding
-import com.v2ray.ang.ui.compose.SettingsSwitchItem
-import com.v2ray.ang.ui.compose.verticalScrollbar
+import com.v2ray.ang.ui.compose.satra.GroupHeader
+import com.v2ray.ang.ui.compose.satra.LazyGroupRow
+import com.v2ray.ang.ui.compose.satra.Satra
+import com.v2ray.ang.ui.compose.satra.SatraBarTextAction
+import com.v2ray.ang.ui.compose.satra.SatraCheckCircle
+import com.v2ray.ang.ui.compose.satra.SatraEmptyState
+import com.v2ray.ang.ui.compose.satra.SatraIcons
+import com.v2ray.ang.ui.compose.satra.SatraLazyPage
+import com.v2ray.ang.ui.compose.satra.SatraRow
+import com.v2ray.ang.ui.compose.satra.SatraSwitchRow
 import com.v2ray.ang.util.LogUtil
 
 data class TaskerItem(
@@ -54,9 +42,9 @@ class TaskerActivity : BaseComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        items.add(TaskerItem(label = "Default", guid = AppConfig.TASKER_DEFAULT_GUID))
+        items.add(TaskerItem(label = getString(R.string.sx_tasker_default), guid = AppConfig.TASKER_DEFAULT_GUID))
 
-        MmkvManager.decodeAllServerList().forEach { key ->
+        MmkvManager.decodeAllServerList().distinct().filter { it != AppConfig.TASKER_DEFAULT_GUID }.forEach { key ->
             MmkvManager.decodeServerConfig(key)?.let { config ->
                 items.add(TaskerItem(label = config.remarks, guid = key))
             }
@@ -124,54 +112,40 @@ fun TaskerScreen(
     onBackClick: () -> Unit,
     onSave: () -> Unit
 ) {
-    val listState = rememberLazyListState()
-    Scaffold(
-        contentWindowInsets = WindowInsets(0),
-        topBar = {
-            AppTopBar(
-                title = "",
-                onBackClick = onBackClick,
-                actions = {
-                    IconButton(onClick = onSave) {
-                        Icon(painterResource(R.drawable.ic_fab_check), contentDescription = stringResource(R.string.acc_save))
-                    }
-                }
-            )
+    SatraLazyPage(
+        title = stringResource(R.string.sx_tasker_title),
+        onBack = onBackClick,
+        actions = { SatraBarTextAction(stringResource(R.string.sx_save), onClick = onSave, enabled = selectedPosition.value >= 0) },
+    ) {
+        item(key = "switch") {
+            LazyGroupRow(0, 1) {
+                SatraSwitchRow(
+                    title = stringResource(R.string.tasker_start_service),
+                    checked = switchState.value,
+                    onCheckedChange = { switchState.value = it },
+                    icon = SatraIcons.Power,
+                    iconColor = Satra.colors.success,
+                )
+            }
         }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            SettingsSwitchItem(
-                title = stringResource(R.string.tasker_start_service),
-                checked = switchState.value,
-                onCheckedChange = { switchState.value = it }
-            )
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScrollbar(listState),
-                contentPadding = NavigationBarsBottomPadding()
-            ) {
-                itemsIndexed(items, key = { _, item -> item.guid }) { index, item ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { selectedPosition.value = index }
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = selectedPosition.value == index,
-                            onClick = { selectedPosition.value = index }
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = item.label, style = MaterialTheme.typography.bodyLarge)
-                    }
-                }
+        item(key = "hdr") { GroupHeader(stringResource(R.string.sx_tasker_pick)) }
+        if (items.isEmpty()) {
+            item(key = "empty") {
+                SatraEmptyState(
+                    icon = SatraIcons.Servers,
+                    title = stringResource(R.string.sx_servers_empty_title),
+                    message = stringResource(R.string.sx_servers_empty_msg),
+                    modifier = Modifier.padding(top = 16.dp),
+                )
+            }
+        }
+        itemsIndexed(items, key = { _, item -> item.guid }) { index, item ->
+            LazyGroupRow(index, items.size, separatorInset = 54.dp) {
+                SatraRow(
+                    title = item.label.ifBlank { "—" },
+                    leading = { SatraCheckCircle(selectedPosition.value == index) },
+                    onClick = { selectedPosition.value = index },
+                )
             }
         }
     }

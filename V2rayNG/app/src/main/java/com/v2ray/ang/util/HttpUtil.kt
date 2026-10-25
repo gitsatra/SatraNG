@@ -4,9 +4,11 @@ import com.v2ray.ang.AppConfig
 import com.v2ray.ang.AppConfig.LOOPBACK
 import com.v2ray.ang.BuildConfig
 import com.v2ray.ang.dto.UrlContentRequest
+import com.v2ray.ang.dto.UrlContentResult
 import okhttp3.Credentials
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import java.io.File
 import java.io.IOException
 import java.net.IDN
@@ -143,7 +145,15 @@ object HttpUtil {
      * @throws IOException If an I/O error occurs.
      */
     @Throws(IOException::class)
-    fun getUrlContentWithUserAgent(request: UrlContentRequest): String {
+    fun getUrlContentWithUserAgent(request: UrlContentRequest): String =
+        getUrlContentWithUserAgentResult(request).body
+
+    /**
+     * Same as [getUrlContentWithUserAgent] but also returns response headers
+     * (needed for 3x-ui Subscription-Userinfo / Profile-* headers).
+     */
+    @Throws(IOException::class)
+    fun getUrlContentWithUserAgentResult(request: UrlContentRequest): UrlContentResult {
         var currentUrl = request.url
         var redirects = 0
         val maxRedirects = 3
@@ -193,7 +203,10 @@ object HttpUtil {
                     }
 
                     response.isSuccessful -> {
-                        return response.body?.string() ?: ""
+                        return UrlContentResult(
+                            body = response.body?.string() ?: "",
+                            headers = flattenHeaders(response),
+                        )
                     }
 
                     else -> {
@@ -203,6 +216,15 @@ object HttpUtil {
             }
         }
         throw IOException("Too many redirects")
+    }
+
+    private fun flattenHeaders(response: Response): Map<String, String> {
+        val map = linkedMapOf<String, String>()
+        for (name in response.headers.names()) {
+            val value = response.header(name) ?: continue
+            map[name] = value
+        }
+        return map
     }
 
     private fun applyEmbeddedBasicAuthHeader(rawUrl: String, requestBuilder: Request.Builder) {

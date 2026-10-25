@@ -1,33 +1,43 @@
 package com.v2ray.ang.util
 
 import android.content.Context
+import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.os.Build
 import com.v2ray.ang.dto.AppInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 object AppManagerUtil {
     /**
-     * Load the list of network applications.
-     *
-     * @param context The context to use.
-     * @return A list of AppInfo objects representing the network applications.
+     * Load launchable apps without QUERY_ALL_PACKAGES (Play Protect-friendly).
+     * Uses MAIN/LAUNCHER visibility declared in the manifest `<queries>` block.
      */
     suspend fun loadNetworkAppList(context: Context): ArrayList<AppInfo> =
         withContext(Dispatchers.IO) {
             val packageManager = context.packageManager
-            val packages = packageManager.getInstalledPackages(PackageManager.GET_PERMISSIONS)
+            val launcherIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+            val resolveFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                PackageManager.MATCH_ALL
+            } else {
+                0
+            }
+            val resolveInfos = packageManager.queryIntentActivities(launcherIntent, resolveFlags)
+            val seen = HashSet<String>()
             val apps = ArrayList<AppInfo>()
 
-            for (pkg in packages) {
-                val applicationInfo = pkg.applicationInfo ?: continue
-
+            for (info in resolveInfos) {
+                val packageName = info.activityInfo?.packageName ?: continue
+                if (!seen.add(packageName)) continue
+                val applicationInfo = try {
+                    packageManager.getApplicationInfo(packageName, 0)
+                } catch (_: PackageManager.NameNotFoundException) {
+                    continue
+                }
                 val appName = applicationInfo.loadLabel(packageManager).toString()
                 val isSystemApp = applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM > 0
-
-                val appInfo = AppInfo(appName, pkg.packageName, isSystemApp, 0)
-                apps.add(appInfo)
+                apps.add(AppInfo(appName, packageName, isSystemApp, 0, com.v2ray.ang.handler.AppCategories.of(applicationInfo)))
             }
 
             return@withContext apps
@@ -35,5 +45,4 @@ object AppManagerUtil {
 
     fun getLastUpdateTime(context: Context): Long =
         context.packageManager.getPackageInfo(context.packageName, 0).lastUpdateTime
-
 }

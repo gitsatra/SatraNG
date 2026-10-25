@@ -179,6 +179,16 @@ object AngConfigManager {
      * @param append Whether to append the configurations.
      * @return A pair containing the number of configurations and subscriptions imported.
      */
+    /**
+     * Imports text shared into the app (share sheet, deep link, QR shortcut). Always appends:
+     * replacing here would wipe the user's existing configs in the default group.
+     */
+    fun importShared(text: String?): Pair<Int, Int> =
+        importBatchConfig(text, "", append = true).also { (count, countSub) ->
+            // Imported from outside the main screen: tell the lists to reload (they cache per group).
+            if (count + countSub > 0) SettingsChangeManager.makeSetupGroupTab()
+        }
+
     fun importBatchConfig(server: String?, subid: String, append: Boolean): Pair<Int, Int> {
         return try {
             var count = parseBatchConfig(Utils.decode(server), subid, append)
@@ -189,12 +199,14 @@ object AngConfigManager {
                 count = parseCustomConfigServer(server, subid, append)
             }
 
-            var countSub = parseBatchSubscription(server)
+            val newUrls = mutableListOf<String>()
+            var countSub = parseBatchSubscription(server, newUrls)
             if (countSub <= 0) {
-                countSub = parseBatchSubscription(Utils.decode(server))
+                countSub = parseBatchSubscription(Utils.decode(server), newUrls)
             }
             if (countSub > 0) {
-                updateConfigViaSubAll()
+                // Fetch only what was just added, right away.
+                updateConfigViaSubs(MmkvManager.decodeSubscriptions().filter { it.subscription.url in newUrls })
             }
 
             count to countSub
@@ -210,7 +222,7 @@ object AngConfigManager {
      * @param servers The servers string.
      * @return The number of subscriptions parsed.
      */
-    private fun parseBatchSubscription(servers: String?): Int {
+    private fun parseBatchSubscription(servers: String?, added: MutableList<String>? = null): Int {
         try {
             if (servers == null) {
                 return 0
@@ -221,7 +233,9 @@ object AngConfigManager {
                 .distinct()
                 .forEach { str ->
                     if (Utils.isValidSubUrl(str)) {
-                        count += importUrlAsSubscription(str)
+                        val n = importUrlAsSubscription(str)
+                        if (n > 0) added?.add(str)
+                        count += n
                     }
                 }
             return count
@@ -440,16 +454,91 @@ object AngConfigManager {
      *
      * @return Detailed result of the subscription update operation.
      */
-    fun updateConfigViaSubAll(): SubscriptionUpdateResult {
+    fun updateConfigViaSubAll(): SubscriptionUpdateResult = updateConfigViaSubs(MmkvManager.decodeSubscriptions())
+
+    /** Updates [subscriptions] with up to [SUB_PARALLEL] downloads at once. */
+    fun updateConfigViaSubs(subscriptions: List<SubscriptionCache>): SubscriptionUpdateResult {
+        if (subscriptions.isEmpty()) return SubscriptionUpdateResult()
         return try {
-            val subscriptions = MmkvManager.decodeSubscriptions()
-            subscriptions.fold(SubscriptionUpdateResult()) { acc, subscription ->
-                acc + updateConfigViaSub(subscription)
+            if (subscriptions.size == 1) return updateConfigViaSub(subscriptions[0])
+            val pool = java.util.concurrent.Executors.newFixedThreadPool(minOf(SUB_PARALLEL, subscriptions.size))
+            try {
+                subscriptions
+                    .map { sub -> pool.submit<SubscriptionUpdateResult> { updateConfigViaSub(sub) } }
+                    .fold(SubscriptionUpdateResult()) { acc, f ->
+                        acc + runCatching { f.get() }.getOrDefault(SubscriptionUpdateResult(failureCount = 1))
+                    }
+            } finally {
+                pool.shutdown()
             }
         } catch (e: Exception) {
             LogUtil.e(AppConfig.TAG, "Failed to update config via all subscriptions", e)
             SubscriptionUpdateResult()
         }
+    }
+
+    private val storeLock = Any()
+    private const val SUB_PARALLEL = 4
+    private const val SUB_TIMEOUT_MS = 12_000
+
+    /**
+     * Downloads a subscription. With the tunnel down there is only the direct route. With the
+     * tunnel up, the direct request and the request through the local proxy race; the first
+     * answer that looks like a subscription wins, so a filtered direct route or a slow proxy no
+     * longer costs the full timeout of the other one.
+     */
+    private fun fetchSubscription(url: String, userAgent: String?, requestHeaders: String?): com.v2ray.ang.dto.UrlContentResult? {
+        val direct = UrlContentRequest(url = url, userAgent = userAgent, requestHeaders = requestHeaders, timeout = SUB_TIMEOUT_MS)
+        val live = UsageStore.live()
+        val tunnelUp = live.running && System.currentTimeMillis() - live.updatedAt < 5_000L
+        if (!tunnelUp) return fetchOnce(direct) ?: fetchViaBestConfigs(direct)
+        val viaProxy = direct.copy(
+            httpPort = SettingsManager.getHttpPort(),
+            proxyUsername = SettingsManager.getSocksUsername(),
+            proxyPassword = SettingsManager.getSocksPassword(),
+        )
+        val answers = java.util.concurrent.LinkedBlockingQueue<Any>()
+        val none = Any()
+        val threads = listOf(direct, viaProxy).map { req ->
+            Thread({ answers.put(fetchOnce(req) ?: none) }, "sub-fetch").apply { isDaemon = true; start() }
+        }
+        repeat(threads.size) {
+            val r = answers.poll(SUB_TIMEOUT_MS * 3L, java.util.concurrent.TimeUnit.MILLISECONDS) ?: return null
+            if (r !== none) return r as com.v2ray.ang.dto.UrlContentResult
+        }
+        return null
+    }
+
+    /**
+     * Direct failed with the tunnel down (the sub host is filtered): quietly retry through the best
+     * pinging configs, each in a short-lived private core on loopback. Invisible to the user.
+     */
+    private fun fetchViaBestConfigs(direct: UrlContentRequest): com.v2ray.ang.dto.UrlContentResult? {
+        val ctx = com.v2ray.ang.AngApplication.application
+        val best = MmkvManager.decodeAllServerList()
+            .mapNotNull { g -> MmkvManager.decodeServerAffiliationInfo(g)?.testDelayMillis?.takeIf { it > 0 }?.let { g to it } }
+            .sortedBy { it.second }.map { it.first }
+            .let { listOfNotNull(MmkvManager.getSelectServer()) + it }.distinct().take(3)
+        for (guid in best) {
+            val r = runCatching { ExitIpProbe.throughConfig(ctx, guid) { port -> fetchOnce(direct.copy(httpPort = port)) } }.getOrNull()
+            if (r != null) { LogUtil.i(AppConfig.TAG, "Subscription fetched via config $guid"); return r }
+        }
+        return null
+    }
+
+    private fun fetchOnce(request: UrlContentRequest): com.v2ray.ang.dto.UrlContentResult? = try {
+        HttpUtil.getUrlContentWithUserAgentResult(request).takeIf { looksLikeSubscription(it.body) }
+    } catch (e: Exception) {
+        LogUtil.w(AppConfig.TAG, "Subscription fetch failed (proxy=${request.httpPort != 0}): ${e.message}")
+        null
+    }
+
+    /** Rejects empty bodies and HTML pages (ISP block pages, captive portals) so the race never picks one. */
+    internal fun looksLikeSubscription(body: String?): Boolean {
+        val text = body?.trim().orEmpty()
+        if (text.isEmpty()) return false
+        val head = text.take(64).lowercase()
+        return !(head.startsWith("<!doctype html") || head.startsWith("<html") || head.startsWith("<head") || head.startsWith("<body"))
     }
 
     /**
@@ -485,56 +574,38 @@ object AngConfigManager {
             LogUtil.i(AppConfig.TAG, url)
             val userAgent = it.subscription.userAgent
             val requestHeaders = it.subscription.requestHeaders
-            val proxyUsername = SettingsManager.getSocksUsername()
-            val proxyPassword = SettingsManager.getSocksPassword()
-
-            var configText = try {
-                val httpPort = SettingsManager.getHttpPort()
-                HttpUtil.getUrlContentWithUserAgent(
-                    UrlContentRequest(
-                        url = url,
-                        userAgent = userAgent,
-                        requestHeaders = requestHeaders,
-                        timeout = 15000,
-                        httpPort = httpPort,
-                        proxyUsername = proxyUsername,
-                        proxyPassword = proxyPassword
-                    )
-                )
-            } catch (e: Exception) {
-                LogUtil.e(AppConfig.ANG_PACKAGE, "Update subscription: proxy not ready or other error", e)
-                ""
-            }
-            if (configText.isEmpty()) {
-                configText = try {
-                    HttpUtil.getUrlContentWithUserAgent(
-                        UrlContentRequest(
-                            url = url,
-                            userAgent = userAgent,
-                            requestHeaders = requestHeaders
-                        )
-                    )
-                } catch (e: Exception) {
-                    LogUtil.e(AppConfig.TAG, "Update subscription: Failed to get URL content with user agent", e)
-                    ""
-                }
-            }
+            val fetchResult = fetchSubscription(url, userAgent, requestHeaders)
+            val configText = fetchResult?.body.orEmpty()
             if (configText.isEmpty()) {
                 return SubscriptionUpdateResult(failureCount = 1)
             }
 
-            val count = parseConfigViaSub(configText, it.guid, false)
-            if (count > 0) {
+            fetchResult?.headers?.let { headers ->
+                SubscriptionUserinfoParser.applyHeaders(it.subscription, headers)
+            }
+
+            // Fetching runs in parallel across subscriptions; storing stays one at a time.
+            val count = synchronized(storeLock) {
+                val n = parseConfigViaSub(configText, it.guid, false)
+                // Always persist userinfo/usage so Home quota cards refresh on pull even if
+                // the config body did not change (count can still be > 0 from replacement).
                 it.subscription.lastUpdated = System.currentTimeMillis()
                 MmkvManager.encodeSubscription(it.guid, it.subscription)
+                HybridUsageTracker.onRemoteSync(it.guid, it.subscription)
+                n
+            }
+            // Lists observing this refresh right away, one subscription at a time (partial results).
+            SettingsChangeManager.makeSetupGroupTab()
+            if (count > 0) {
                 LogUtil.i(AppConfig.TAG, "Subscription updated: ${it.subscription.remarks}, $count configs")
                 return SubscriptionUpdateResult(
                     configCount = count,
                     successCount = 1
                 )
             } else {
-                // Got response but no valid configs parsed
-                return SubscriptionUpdateResult(failureCount = 1)
+                // Body had no new configs, but quota/expiry headers were saved above.
+                LogUtil.i(AppConfig.TAG, "Subscription userinfo refreshed: ${it.subscription.remarks}")
+                return SubscriptionUpdateResult(successCount = 1)
             }
         } catch (e: Exception) {
             LogUtil.e(AppConfig.TAG, "Failed to update config via subscription", e)
@@ -614,6 +685,7 @@ object AngConfigManager {
         subItem.remarks = uri.fragment ?: "import sub"
         subItem.url = url
         MmkvManager.encodeSubscription("", subItem)
+        SettingsChangeManager.makeSetupGroupTab()
         return 1
     }
 

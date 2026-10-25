@@ -1,6 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/sx_widget_desc"
+    android:initialKeyguardLayout="@layout/widget_switch"
     android:initialLayout="@layout/widget_switch"
-    android:minWidth="20dp"
-    android:minHeight="20dp"
+    android:minWidth="180dp"
+    android:minHeight="56dp"
+    android:minResizeWidth="110dp"
+    android:minResizeHeight="56dp"
+    android:previewLayout="@layout/widget_switch"
+    android:previewImage="@drawable/ic_satra_logo_full_orange"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellWidth="3"
+    android:targetCellHeight="1"
+    android:updatePeriodMillis="0"
     android:widgetCategory="home_screen|keyguard" />

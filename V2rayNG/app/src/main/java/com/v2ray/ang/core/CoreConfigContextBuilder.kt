@@ -99,7 +99,7 @@ object CoreConfigContextBuilder {
      * Invalid or empty targets are skipped and handled by fallback logic later.
      */
     private fun resolveRoutingOutbounds(): List<CoreConfigContext.ResolvedOutbound> {
-        val rulesetItems = MmkvManager.decodeRoutingRulesets() ?: return emptyList()
+        val rulesetItems = com.v2ray.ang.handler.RoutingPolicy.current(MmkvManager.decodeRoutingRulesets())
         val resolvedOutbounds = mutableListOf<CoreConfigContext.ResolvedOutbound>()
         val processedTags = mutableSetOf<String>()
 
@@ -226,7 +226,7 @@ object CoreConfigContextBuilder {
      * outbounds are normalized into three tags only: proxy / direct / block.
      */
     private fun collectRoutingDomainRulesForDns(): List<CoreConfigContext.RoutingDomainRule> {
-        val rulesetItems = MmkvManager.decodeRoutingRulesets() ?: return emptyList()
+        val rulesetItems = com.v2ray.ang.handler.RoutingPolicy.current(MmkvManager.decodeRoutingRulesets())
         val result = mutableListOf<CoreConfigContext.RoutingDomainRule>()
 
         rulesetItems

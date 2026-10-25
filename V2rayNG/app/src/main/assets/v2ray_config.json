@@ -67,12 +67,7 @@
     },
     {
       "protocol": "blackhole",
-      "tag": "block",
-      "settings": {
-        "response": {
-          "type": "http"
-        }
-      }
+      "tag": "block"
     }
   ],
   "routing": {

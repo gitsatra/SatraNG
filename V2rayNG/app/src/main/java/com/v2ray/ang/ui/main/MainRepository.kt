@@ -1,5 +1,6 @@
 package com.v2ray.ang.ui.main
 
+import kotlinx.coroutines.launch
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -73,6 +74,17 @@ class MainRepository(
                     requestId
                 )
                 AppConfig.MSG_MEASURE_CONFIG_CANCEL -> MainServiceEvent.MeasureConfigCancelled(requestId)
+                AppConfig.MSG_LOCATE_RESULT -> safeIntent
+                    .serializable<RealPingResult>("content")
+                    ?.let { MainServiceEvent.LocateResult(it.guid, it.delayMillis > 0L) }
+                AppConfig.MSG_LOCATE_FINISH -> MainServiceEvent.LocateFinished
+                AppConfig.MSG_SPEED_RESULT -> safeIntent
+                    .serializable<RealPingResult>("content")
+                    ?.let { MainServiceEvent.SpeedResult(it.guid, it.delayMillis) }
+                AppConfig.MSG_SPEED_FINISH -> MainServiceEvent.SpeedFinished
+                AppConfig.MSG_SPEED_PROGRESS -> safeIntent.getStringExtra("content")?.split('|')?.takeIf { it.size == 3 }?.let {
+                    MainServiceEvent.SpeedProgress(it[0], it[1].toLongOrNull() ?: 0L, (it[2].toIntOrNull() ?: 0) / 1000f)
+                }
 
                 else -> null
             }
@@ -140,7 +152,8 @@ class MainRepository(
                 }
             )
         }
-        result += MmkvManager.decodeSubscriptions()
+        // Disabled subscriptions are hidden from the Servers list (and so from smart connect).
+        result += MmkvManager.decodeSubscriptions().filter { it.subscription.enabled }
         return result
     }
 
@@ -149,7 +162,7 @@ class MainRepository(
 
     override fun getServerGuidList(groupId: String): List<String> =
         if (groupId.isEmpty()) {
-            MmkvManager.decodeAllServerList()
+            MmkvManager.decodeActiveServerList()
         } else {
             MmkvManager.decodeServerList(groupId)
         }
@@ -227,6 +240,8 @@ class MainRepository(
 
     override fun syncSubscriptions() {
         SubscriptionUpdater.sync(app)
+        runCatching { SubscriptionUpdater.refreshOnLaunch(app) }
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch { runCatching { com.v2ray.ang.handler.GeoUpdater.checkOnLaunch(app) } }
     }
 
     override fun initAssets() {

@@ -39,6 +39,10 @@ object SettingsManager {
 
     fun initApp(context: Context) {
         ensureDefaultSettings()
+        migrateLegacyLocalPorts()
+        seedSatraTunnelDefaults()
+        migrateToXrayEngine()
+        migrateSubscriptionAutoUpdate()
         //ensureDefaultSubscription()
         initRoutingRulesets(context)
         migrateServerListToSubscriptions()
@@ -52,10 +56,36 @@ object SettingsManager {
     private fun initRoutingRulesets(context: Context) {
         val exist = MmkvManager.decodeRoutingRulesets()
         if (exist.isNullOrEmpty()) {
-            val rulesetList = getPresetRoutingRulesets(context)
+            val rulesetList = getPresetRoutingRulesets(context, defaultRoutingType(context))
             MmkvManager.encodeRoutingRulesets(rulesetList)
         }
+        migrateLegacyRoutingPreset(context)
     }
+
+    fun defaultRoutingType(context: Context): RoutingType =
+        RoutingPresets.defaultFor(context.resources.configuration.locales[0] ?: java.util.Locale.getDefault())
+
+    /** Loads the shipped Iran/Russia presets for matching on the routing screen. */
+    fun offeredRoutingPresets(context: Context): Map<RoutingType, List<RulesetItem>> =
+        RoutingPresets.offered.associateWith { getPresetRoutingRulesets(context, it).orEmpty() }
+
+    /**
+     * One-time: an untouched upstream China/Global preset becomes the regional Iran/Russia preset.
+     * Any list the user changed is left exactly as it is.
+     */
+    private fun migrateLegacyRoutingPreset(context: Context) {
+        if (MmkvManager.decodeSettingsBool(PREF_ROUTING_PRESET_MIGRATED, false)) return
+        val current = MmkvManager.decodeRoutingRulesets().orEmpty()
+        val legacyMatch = RoutingPresets.legacy.any { t ->
+            getPresetRoutingRulesets(context, t)?.let { RoutingPresets.isUnmodified(current, it) } == true
+        }
+        if (legacyMatch) {
+            getPresetRoutingRulesets(context, defaultRoutingType(context))?.let { resetRoutingRulesetsCommon(it) }
+        }
+        MmkvManager.encodeSettings(PREF_ROUTING_PRESET_MIGRATED, true)
+    }
+
+    private const val PREF_ROUTING_PRESET_MIGRATED = "pref_satra_routing_preset_migrated_v1"
 
     /**
      * Get preset routing rulesets.
@@ -63,7 +93,7 @@ object SettingsManager {
      * @param type The routing preset type.
      * @return A mutable list of RulesetItem.
      */
-    private fun getPresetRoutingRulesets(context: Context, type: RoutingType = RoutingType.WHITE): MutableList<RulesetItem>? {
+    private fun getPresetRoutingRulesets(context: Context, type: RoutingType = RoutingType.WHITE_IRAN): MutableList<RulesetItem>? {
         val assets = Utils.readTextFromAssets(context, type.fileName)
         if (TextUtils.isEmpty(assets)) {
             return null
@@ -411,7 +441,7 @@ object SettingsManager {
      * @return True if HEV TUN is used, false otherwise.
      */
     fun isUsingHevTun(): Boolean {
-        return MmkvManager.decodeSettingsBool(AppConfig.PREF_USE_HEV_TUNNEL, true)
+        return MmkvManager.decodeSettingsBool(AppConfig.PREF_USE_HEV_TUNNEL, AppConfig.DEFAULT_USE_HEV_TUNNEL)
     }
 
     /**
@@ -461,6 +491,7 @@ object SettingsManager {
         ensureDefaultValue(AppConfig.PREF_VPN_DNS, AppConfig.DNS_VPN)
         ensureDefaultValue(AppConfig.PREF_VPN_MTU, AppConfig.VPN_MTU.toString())
         ensureDefaultValue(AppConfig.PREF_SOCKS_PORT, AppConfig.PORT_SOCKS)
+        ensureDefaultValue(AppConfig.PREF_LOCAL_DNS_PORT, AppConfig.PORT_LOCAL_DNS)
         ensureDefaultValue(AppConfig.PREF_REMOTE_DNS, AppConfig.DNS_PROXY)
         ensureDefaultValue(AppConfig.PREF_DOMESTIC_DNS, AppConfig.DNS_DIRECT)
         ensureDefaultValue(AppConfig.PREF_DELAY_TEST_URL, AppConfig.DELAY_TEST_URL)
@@ -482,6 +513,89 @@ object SettingsManager {
         if (MmkvManager.decodeSettingsString(key).isNullOrEmpty()) {
             MmkvManager.encodeSettings(key, default)
         }
+    }
+
+    private fun ensureDefaultBool(key: String, default: Boolean) {
+        if (!MmkvManager.containsSettingsKey(key)) {
+            MmkvManager.encodeSettings(key, default)
+        }
+    }
+
+    /**
+     * Replace stock v2rayNG local ports (10808/10853) with SatraNG defaults once.
+     * Custom non-legacy ports are left unchanged.
+     */
+    private fun migrateLegacyLocalPorts() {
+        if (MmkvManager.decodeSettingsBool(AppConfig.PREF_SATRA_LOCAL_PORTS_MIGRATED, false)) {
+            return
+        }
+        val socks = MmkvManager.decodeSettingsString(AppConfig.PREF_SOCKS_PORT)
+        if (SatraLocalPortPolicy.shouldReplaceWithDefault(socks, AppConfig.LEGACY_PORT_SOCKS)) {
+            MmkvManager.encodeSettings(AppConfig.PREF_SOCKS_PORT, AppConfig.PORT_SOCKS)
+        }
+        val localDns = MmkvManager.decodeSettingsString(AppConfig.PREF_LOCAL_DNS_PORT)
+        if (SatraLocalPortPolicy.shouldReplaceWithDefault(localDns, AppConfig.LEGACY_PORT_LOCAL_DNS)) {
+            MmkvManager.encodeSettings(AppConfig.PREF_LOCAL_DNS_PORT, AppConfig.PORT_LOCAL_DNS)
+        }
+        val mtu = MmkvManager.decodeSettingsString(AppConfig.PREF_VPN_MTU)
+        if (SatraLocalPortPolicy.shouldReplaceMtu(mtu)) {
+            MmkvManager.encodeSettings(AppConfig.PREF_VPN_MTU, AppConfig.VPN_MTU.toString())
+        }
+        MmkvManager.encodeSettings(AppConfig.PREF_SATRA_LOCAL_PORTS_MIGRATED, true)
+    }
+
+    /**
+     * Seed stronger full-device tunnel defaults once for installs that never set these keys.
+     */
+    private fun seedSatraTunnelDefaults() {
+        if (MmkvManager.decodeSettingsBool(AppConfig.PREF_SATRA_TUNNEL_DEFAULTS_SEEDED, false)) {
+            return
+        }
+        ensureDefaultBool(AppConfig.PREF_LOCAL_DNS_ENABLED, AppConfig.DEFAULT_LOCAL_DNS_ENABLED)
+        ensureDefaultBool(AppConfig.PREF_SNIFFING_ENABLED, AppConfig.DEFAULT_SNIFFING_ENABLED)
+        ensureDefaultBool(AppConfig.PREF_USE_HEV_TUNNEL, AppConfig.DEFAULT_USE_HEV_TUNNEL)
+        ensureDefaultBool(AppConfig.PREF_SOCKS_ENABLE_UDP, AppConfig.DEFAULT_SOCKS_ENABLE_UDP)
+        ensureDefaultBool(AppConfig.PREF_APPEND_HTTP_PROXY, AppConfig.DEFAULT_APPEND_HTTP_PROXY)
+        ensureDefaultBool(AppConfig.PREF_IPV6_ENABLED, AppConfig.DEFAULT_IPV6_ENABLED)
+        ensureDefaultBool(AppConfig.PREF_PER_APP_PROXY, false)
+        ensureDefaultBool(AppConfig.PREF_MUX_ENABLED, false)
+        ensureDefaultBool(AppConfig.PREF_PROXY_SHARING, false)
+        ensureDefaultBool(AppConfig.PREF_AUTO_CONNECT, true)
+        ensureDefaultBool(AppConfig.PREF_USER_REQUESTED_STOP, false)
+        MmkvManager.encodeSettings(AppConfig.PREF_SATRA_TUNNEL_DEFAULTS_SEEDED, true)
+    }
+
+    /**
+     * One-time switch of existing installs to the Xray tunnel engine (Android 10+), so app and
+     * category limits work without any extra step. Runs at app start, before any tunnel is built
+     * by this process; a tunnel that is already up picks it up on its next (re)connect.
+     */
+    /**
+     * One time: subscriptions still on the old untouched defaults (auto-update off, 24 h) start
+     * refreshing in the background every 15 minutes. Anything the user changed is left alone.
+     */
+    private fun migrateSubscriptionAutoUpdate() {
+        if (MmkvManager.decodeSettingsBool(AppConfig.PREF_SATRA_SUB_AUTO_MIGRATED, false)) return
+        runCatching {
+            MmkvManager.decodeSubscriptions().forEach { cache ->
+                val sub = cache.subscription
+                if (sub.url.isNotBlank() && !sub.autoUpdate && sub.updateInterval == 1440L) {
+                    sub.autoUpdate = true
+                    sub.updateInterval = AppConfig.DEFAULT_SUB_INTERVAL_MINUTES
+                    MmkvManager.encodeSubscription(cache.guid, sub)
+                }
+            }
+        }.onFailure { LogUtil.e(AppConfig.TAG, "Subscription auto-update migration failed", it) }
+        MmkvManager.encodeSettings(AppConfig.PREF_SATRA_SUB_AUTO_MIGRATED, true)
+    }
+
+    private fun migrateToXrayEngine() {
+        if (MmkvManager.decodeSettingsBool(AppConfig.PREF_SATRA_ENGINE_XRAY_MIGRATED, false)) return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            MmkvManager.encodeSettings(AppConfig.PREF_USE_HEV_TUNNEL, false)
+            MmkvManager.encodeSettings(AppConfig.PREF_ROUTE_ONLY_ENABLED, true)
+        }
+        MmkvManager.encodeSettings(AppConfig.PREF_SATRA_ENGINE_XRAY_MIGRATED, true)
     }
 
     private fun migrateHysteria2PinSHA256() {

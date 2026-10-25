@@ -1,0 +1,8 @@
+[
+  { "remarks": "Direct LAN IP", "outboundTag": "direct", "ip": ["geoip:private"] },
+  { "remarks": "Direct LAN domains", "outboundTag": "direct", "domain": ["geosite:private"] },
+  { "remarks": "Proxy Google", "outboundTag": "proxy", "domain": ["geosite:google"] },
+  { "remarks": "Bypass China DNS", "outboundTag": "direct", "ip": ["223.5.5.5", "223.6.6.6", "119.29.29.29", "1.12.12.12", "120.53.53.53"] },
+  { "remarks": "Bypass China domains", "outboundTag": "direct", "domain": ["regexp:\\.cn$", "domain:cn", "geosite:cn"] },
+  { "remarks": "Bypass China IP", "outboundTag": "direct", "ip": ["geoip:cn"] }
+]

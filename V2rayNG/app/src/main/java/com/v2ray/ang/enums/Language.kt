@@ -6,15 +6,8 @@ import java.util.Locale
 enum class Language(val code: String, val languageTag: String) {
     AUTO("auto", ""),
     ENGLISH("en", "en"),
-    CHINA("zh-rCN", "zh-CN"),
-    TRADITIONAL_CHINESE("zh-rTW", "zh-TW"),
-    VIETNAMESE("vi", "vi"),
-    RUSSIAN("ru", "ru"),
     PERSIAN("fa", "fa"),
-    ARABIC("ar", "ar"),
-    AZERBAIJANI("az", "az"),
-    BANGLA("bn", "bn"),
-    BAKHTIARI("bqi-rIR", "bqi-IR");
+    RUSSIAN("ru", "ru");
 
     val locale: Locale?
         get() = languageTag.takeIf { it.isNotEmpty() }?.let(Locale::forLanguageTag)
@@ -37,21 +30,8 @@ enum class Language(val code: String, val languageTag: String) {
             val locale = Locale.forLanguageTag(languageTag)
             return when (locale.language) {
                 "en" -> ENGLISH
-                "zh" -> if (
-                    locale.script == "Hant" || locale.country in setOf("TW", "HK", "MO")
-                ) {
-                    TRADITIONAL_CHINESE
-                } else {
-                    CHINA
-                }
-
-                "vi" -> VIETNAMESE
-                "ru" -> RUSSIAN
                 "fa" -> PERSIAN
-                "ar" -> ARABIC
-                "az" -> AZERBAIJANI
-                "bn" -> BANGLA
-                "bqi" -> BAKHTIARI
+                "ru" -> RUSSIAN
                 else -> AUTO
             }
         }

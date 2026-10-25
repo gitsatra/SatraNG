@@ -1,0 +1,24 @@
+sx_quota_expires_days|one|Expires in %d day|%d روز دیگر منقضی می‌شود
+sx_quota_expires_days|other|Expires in %d days|%d روز دیگر منقضی می‌شود
+sx_configs_count|one|%d server|%d سرور
+sx_configs_count|other|%d servers|%d سرور
+sx_subs_count|one|%d subscription|%d اشتراک
+sx_subs_count|other|%d subscriptions|%d اشتراک
+sx_subs_updated|one|%1$s updated: %2$d server|%1$s به‌روز شد: %2$d سرور
+sx_subs_updated|other|%1$s updated: %2$d servers|%1$s به‌روز شد: %2$d سرور
+sx_hours|one|%d hour|%d ساعت
+sx_hours|other|%d hours|%d ساعت
+sx_days|one|%d day|%d روز
+sx_days|other|%d days|%d روز
+sx_days_left|one|%d day left|%d روز مانده
+sx_days_left|other|%d days left|%d روز مانده
+sx_add_sub_done|one|Subscription added: %d server|اشتراک اضافه شد: %d سرور
+sx_add_sub_done|other|Subscription added: %d servers|اشتراک اضافه شد: %d سرور
+sx_add_configs_done|one|%d server added|%d سرور اضافه شد
+sx_add_configs_done|other|%d servers added|%d سرور اضافه شد
+sx_cat_apps|one|%d app|%d برنامه
+sx_cat_apps|other|%d apps|%d برنامه
+sx_split_selected|one|%d selected|%d انتخاب‌شده
+sx_split_selected|other|%d selected|%d انتخاب‌شده
+sx_minutes|one|%d minute|%d دقیقه
+sx_minutes|other|%d minutes|%d دقیقه

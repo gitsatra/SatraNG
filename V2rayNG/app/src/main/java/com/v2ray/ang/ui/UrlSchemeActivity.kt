@@ -76,10 +76,12 @@ class UrlSchemeActivity : BaseComponentActivity() {
             }
             LogUtil.i(AppConfig.TAG, decodedUrl)
             lifecycleScope.launch(Dispatchers.IO) {
-                val (count, countSub) = AngConfigManager.importBatchConfig(decodedUrl, "", false)
+                val (count, countSub) = AngConfigManager.importShared(decodedUrl)
                 withContext(Dispatchers.Main) {
-                    if (count + countSub > 0) {
+                    if (countSub > 0) {
                         toast(R.string.import_subscription_success)
+                    } else if (count > 0) {
+                        toast(resources.getQuantityString(R.plurals.sx_add_configs_done, count, count))
                     } else {
                         toast(R.string.import_subscription_failure)
                     }

@@ -23,6 +23,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -51,6 +52,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -58,6 +60,17 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import com.v2ray.ang.R
+import com.v2ray.ang.ui.compose.satra.SatraShapes
+import com.v2ray.ang.ui.compose.satra.SatraSpace
+import com.v2ray.ang.ui.compose.satra.satraClickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import com.v2ray.ang.ui.compose.satra.Satra
+import com.v2ray.ang.ui.compose.satra.SatraIconButton
+import com.v2ray.ang.ui.compose.satra.SatraIcons
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import com.v2ray.ang.util.AppIconFetcher
 import sh.calvin.reorderable.ReorderableCollectionItemScope
 
@@ -75,8 +88,9 @@ fun AppTopBar(
     navigationIcon: @Composable (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {}
 ) {
+    val c = Satra.colors
     Column {
-        TopAppBar(
+        CenterAlignedTopAppBar(
             title = {
                 if (isSearchActive) {
                     SearchInputField(
@@ -85,27 +99,33 @@ fun AppTopBar(
                         placeholder = searchPlaceholder
                     )
                 } else {
-                    Text(text = title)
+                    Text(
+                        text = title,
+                        style = Satra.type.headline,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
             },
             navigationIcon = {
                 if (navigationIcon != null) {
                     navigationIcon()
                 } else {
-                    IconButton(onClick = if (isSearchActive) onSearchClose else onBackClick) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_arrow_back_24dp),
-                            contentDescription = stringResource(R.string.acc_back)
-                        )
-                    }
+                    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+                    SatraIconButton(
+                        icon = if (rtl) SatraIcons.ChevronRight else SatraIcons.ChevronLeft,
+                        contentDescription = stringResource(R.string.acc_back),
+                        onClick = if (isSearchActive) onSearchClose else onBackClick,
+                    )
                 }
             },
             actions = actions,
             colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-                titleContentColor = MaterialTheme.colorScheme.onSurface,
-                navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-                actionIconContentColor = MaterialTheme.colorScheme.onSurface
+                containerColor = Color.Transparent,
+                scrolledContainerColor = Color.Transparent,
+                titleContentColor = c.textPrimary,
+                navigationIconContentColor = c.textPrimary,
+                actionIconContentColor = c.textPrimary
             )
         )
         AnimatedVisibility(
@@ -113,7 +133,11 @@ fun AppTopBar(
             enter = expandVertically(),
             exit = shrinkVertically()
         ) {
-            LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.secondary)
+            LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth(),
+                color = c.accent,
+                trackColor = c.accent.copy(alpha = 0.15f)
+            )
         }
     }
 }
@@ -144,7 +168,7 @@ private fun SearchInputField(
                     backgroundColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.4f)
                 )
             ),
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search, autoCorrectEnabled = false),
             modifier = Modifier
                 .weight(1f)
                 .focusRequester(focusRequester)
@@ -170,8 +194,11 @@ fun AppListItem(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clickable { onCheckedChange(!checked) }
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = SatraSpace.Gutter, vertical = 1.5.dp)
+            .clip(SatraShapes.Medium)
+            .background(Satra.colors.surface)
+            .satraClickable(role = androidx.compose.ui.semantics.Role.Checkbox, pressedScale = 0.99f, haptic = false) { onCheckedChange(!checked) }
+            .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         val model = remember(icon, packageName) {
@@ -189,7 +216,7 @@ fun AppListItem(
         AsyncImage(
             model = model,
             contentDescription = null,
-            modifier = Modifier.size(40.dp),
+            modifier = Modifier.size(40.dp).clip(RoundedCornerShape(10.dp)),
             contentScale = ContentScale.Fit,
             error = painterResource(R.drawable.ic_image_24dp),
             fallback = painterResource(R.drawable.ic_image_24dp)
@@ -198,15 +225,16 @@ fun AppListItem(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = appName,
-                style = MaterialTheme.typography.bodyLarge,
+                style = Satra.type.body,
+                color = Satra.colors.textPrimary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = packageName,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = Satra.type.caption,
+                color = Satra.colors.textSecondary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -214,14 +242,15 @@ fun AppListItem(
         Checkbox(
             checked = checked,
             onCheckedChange = onCheckedChange,
-            colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.secondary)
+            colors = CheckboxDefaults.colors(checkedColor = Satra.colors.accent)
         )
     }
 }
 
 @Composable
 fun ItemDivider() {
-    AppDivider(modifier = Modifier.padding(horizontal = 12.dp))
+    // Lists are rendered as separate rounded rows now; the gap replaces the hairline.
+    Spacer(Modifier.height(0.dp))
 }
 
 @Composable
@@ -287,7 +316,9 @@ fun ReorderableListItem(
     val elevation by reorderableElevation(isDragging)
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shadowElevation = elevation
+        shadowElevation = elevation,
+        color = Color.Transparent,
+        tonalElevation = 0.dp
     ) {
         Row(
             modifier = Modifier
@@ -310,7 +341,9 @@ fun ReorderableGridItem(
         modifier = Modifier
             .fillMaxWidth()
             .then(with(scope) { reorderableDragHandle() }),
-        shadowElevation = elevation
+        shadowElevation = elevation,
+        color = Color.Transparent,
+        tonalElevation = 0.dp
     ) {
         content()
     }

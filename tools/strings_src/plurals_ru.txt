@@ -1,0 +1,48 @@
+sx_quota_expires_days|one|Истекает через %d день
+sx_quota_expires_days|few|Истекает через %d дня
+sx_quota_expires_days|many|Истекает через %d дней
+sx_quota_expires_days|other|Истекает через %d дня
+sx_configs_count|one|%d сервер
+sx_configs_count|few|%d сервера
+sx_configs_count|many|%d серверов
+sx_configs_count|other|%d сервера
+sx_subs_count|one|%d подписка
+sx_subs_count|few|%d подписки
+sx_subs_count|many|%d подписок
+sx_subs_count|other|%d подписки
+sx_subs_updated|one|%1$s обновлена: %2$d сервер
+sx_subs_updated|few|%1$s обновлена: %2$d сервера
+sx_subs_updated|many|%1$s обновлена: %2$d серверов
+sx_subs_updated|other|%1$s обновлена: %2$d сервера
+sx_hours|one|%d час
+sx_hours|few|%d часа
+sx_hours|many|%d часов
+sx_hours|other|%d часа
+sx_days|one|%d день
+sx_days|few|%d дня
+sx_days|many|%d дней
+sx_days|other|%d дня
+sx_days_left|one|Остался %d день
+sx_days_left|few|Осталось %d дня
+sx_days_left|many|Осталось %d дней
+sx_days_left|other|Осталось %d дня
+sx_add_sub_done|one|Подписка добавлена: %d сервер
+sx_add_sub_done|few|Подписка добавлена: %d сервера
+sx_add_sub_done|many|Подписка добавлена: %d серверов
+sx_add_sub_done|other|Подписка добавлена: %d сервера
+sx_add_configs_done|one|Добавлен %d сервер
+sx_add_configs_done|few|Добавлено %d сервера
+sx_add_configs_done|many|Добавлено %d серверов
+sx_add_configs_done|other|Добавлено %d сервера
+sx_cat_apps|one|%d приложение
+sx_cat_apps|few|%d приложения
+sx_cat_apps|many|%d приложений
+sx_cat_apps|other|%d приложения
+sx_split_selected|one|Выбрано: %d
+sx_split_selected|few|Выбрано: %d
+sx_split_selected|many|Выбрано: %d
+sx_split_selected|other|Выбрано: %d
+sx_minutes|one|%d минута
+sx_minutes|few|%d минуты
+sx_minutes|many|%d минут
+sx_minutes|other|%d минуты

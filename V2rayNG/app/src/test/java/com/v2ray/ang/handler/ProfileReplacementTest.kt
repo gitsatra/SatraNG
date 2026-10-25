@@ -126,6 +126,42 @@ class ProfileReplacementTest {
         assertEquals(emptySet<String>(), result)
     }
 
+    @Test
+    fun refreshKeepsGuidsOfUnchangedConfigsEvenWhenRenamed() {
+        val old = mapOf(
+            "g-a" to profile("A 99 GB", "a.example", "443", "id-a"),
+            "g-b" to profile("B", "b.example", "443", "id-b"),
+            "g-gone" to profile("Gone", "gone.example", "443", "id-x"),
+        )
+        val fresh = mapOf(
+            "n1" to profile("A 98 GB", "a.example", "443", "id-a"), // traffic in name changed
+            "n2" to profile("B", "b.example", "443", "id-b"),
+            "n3" to profile("New", "new.example", "443", "id-n"),
+        )
+        assertEquals(mapOf("n1" to "g-a", "n2" to "g-b"), ProfileReplacement.matchExisting(fresh, old))
+    }
+
+    @Test
+    fun duplicateEndpointsPreferSameNameAndUseEachOldGuidOnce() {
+        val old = mapOf(
+            "g1" to profile("Fast", "x.example", "443", "id"),
+            "g2" to profile("Slow", "x.example", "443", "id"),
+        )
+        val fresh = mapOf(
+            "n1" to profile("Slow", "x.example", "443", "id"),
+            "n2" to profile("Fast", "x.example", "443", "id"),
+            "n3" to profile("Third", "x.example", "443", "id"),
+        )
+        assertEquals(mapOf("n1" to "g2", "n2" to "g1"), ProfileReplacement.matchExisting(fresh, old))
+    }
+
+    @Test
+    fun changedCredentialsAreANewConfig() {
+        val old = mapOf("g" to profile("A", "a.example", "443", "old-id"))
+        val fresh = mapOf("n" to profile("A", "a.example", "443", "new-id"))
+        assertEquals(emptyMap<String, String>(), ProfileReplacement.matchExisting(fresh, old))
+    }
+
     private fun profile(
         remarks: String = "",
         server: String = "",

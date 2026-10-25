@@ -26,6 +26,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.draw.shadow
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -221,126 +224,91 @@ fun ProxyChainScreen(
         }
     }
 
-    Scaffold(
-        contentWindowInsets = WindowInsets(0),
-        topBar = {
-            AppTopBar(
-                title = EConfigType.PROXYCHAIN.toString(),
-                onBackClick = onBackClick,
-                actions = {
-                    if (showDelete) {
-                        IconButton(onClick = { showProfileDeleteConfirm = true }) {
-                            Icon(painterResource(R.drawable.ic_delete_24dp), contentDescription = stringResource(R.string.acc_delete))
-                        }
-                    }
-                    IconButton(onClick = {
-                        val remarksErr = remarks.isBlank()
-                        isRemarksError = remarksErr
-
-                        val hasError = remarksErr
-                        if (!hasError) {
-                            onSave(remarks, members)
-                        }
-                    }) {
-                        Icon(painterResource(R.drawable.ic_fab_check), contentDescription = stringResource(R.string.acc_save))
-                    }
-                }
-            )
+    val sc = com.v2ray.ang.ui.compose.satra.Satra.colors
+    com.v2ray.ang.ui.compose.satra.SatraLazyPage(
+        title = stringResource(R.string.sx_chain_title),
+        onBack = onBackClick,
+        state = lazyListState,
+        modifier = Modifier.imePadding(),
+        actions = {
+            if (showDelete) {
+                com.v2ray.ang.ui.compose.satra.SatraIconButton(icon = com.v2ray.ang.ui.compose.satra.SatraIcons.Trash, contentDescription = stringResource(R.string.acc_delete), onClick = { showProfileDeleteConfirm = true }, tint = sc.danger)
+            }
+            com.v2ray.ang.ui.compose.satra.SatraBarTextAction(stringResource(R.string.sx_save), onClick = {
+                isRemarksError = remarks.isBlank()
+                if (!isRemarksError) onSave(remarks, members)
+            })
         },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    members = members + ""
-                    memberKeys = memberKeys + UUID.randomUUID().toString()
-                },
-                modifier = Modifier
-                    .offset(y = -20.dp)
-                    .navigationBarsPadding()
-            ) {
-                Icon(painterResource(R.drawable.ic_add_24dp), contentDescription = stringResource(R.string.acc_add_member))
-            }
-        }
-    ) { innerPadding ->
-        LazyColumn(
-            state = lazyListState,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .consumeWindowInsets(innerPadding)
-                .imePadding()
-                .verticalScrollbar(lazyListState),
-            contentPadding = PaddingValues(
-                top = 8.dp,
-                start = 16.dp,
-                end = 16.dp,
-                bottom = 36.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    ) {
+        item(key = "remarks_field") {
+            FormTextField(
+                label = stringResource(R.string.sx_chain_name),
+                value = remarks,
+                onValueChange = { remarks = it; isRemarksError = false },
+                isError = isRemarksError
             )
-        ) {
-            item(key = "remarks_field") {
-                FormTextField(
-                    label = stringResource(R.string.server_lab_remarks),
-                    value = remarks,
-                    onValueChange = { remarks = it },
-                    isError = isRemarksError
-                )
-            }
-
-            item {
-                Text(
-                    text = stringResource(R.string.server_proxy_chain_members),
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp)
-                )
-            }
-
-            itemsIndexed(items = members, key = { index, _ -> memberKeys[index] }) { index, member ->
-                val memberKey = memberKeys[index]
-                ReorderableItem(reorderableState, key = memberKey) { isDragging ->
-                    val elevation by animateDpAsState(if (isDragging) 4.dp else 0.dp)
-                    Surface(shadowElevation = elevation) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .then(with(this) { reorderableDragHandle() })
-                                .padding(horizontal = 4.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
+        }
+        item(key = "members_header") { com.v2ray.ang.ui.compose.satra.GroupHeader(stringResource(R.string.server_proxy_chain_members)) }
+        val count = members.size + 1
+        itemsIndexed(items = members, key = { index, _ -> memberKeys.getOrElse(index) { "m$index" } }) { index, member ->
+            val memberKey = memberKeys.getOrElse(index) { "m$index" }
+            ReorderableItem(reorderableState, key = memberKey) { isDragging ->
+                val elevation by animateDpAsState(if (isDragging) 6.dp else 0.dp)
+                com.v2ray.ang.ui.compose.satra.LazyGroupRow(index, count, Modifier.shadow(elevation), separatorInset = 48.dp) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 6.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            Modifier.size(36.dp).then(reorderableDragHandle()),
+                            contentAlignment = Alignment.Center,
                         ) {
                             Text(
                                 "${index + 1}",
-                                modifier = Modifier
-                                    .padding(start = 16.dp)
-                                    .width(10.dp)
+                                style = com.v2ray.ang.ui.compose.satra.Satra.type.headline,
+                                color = sc.accent,
                             )
-                            FormDropdownField(
-                                label = stringResource(R.string.server_lab_remarks),
-                                placeholder = stringResource(R.string.server_proxy_chain_member_unselected),
-                                value = member,
-                                options = allRemarks,
-                                onValueChange = { newVal ->
-                                    members = members.toMutableList().also { it[index] = newVal }
-                                },
-                                editable = true,
-                                modifier = Modifier.weight(1f)
-                            )
-                            IconButton(onClick = {
-                                if (member.isBlank()) {
-                                    val (remainingMembers, remainingKeys) = withoutProxyChainMember(members, memberKeys, memberKey)
-                                    members = remainingMembers
-                                    memberKeys = remainingKeys
-                                } else {
-                                    memberToDeleteKey = memberKey
-                                }
-                            }) {
-                                Icon(
-                                    painterResource(R.drawable.ic_delete_24dp),
-                                    contentDescription = stringResource(R.string.acc_remove)
-                                )
-                            }
                         }
+                        FormDropdownField(
+                            label = stringResource(R.string.sx_chain_hop, index + 1),
+                            placeholder = stringResource(R.string.server_proxy_chain_member_unselected),
+                            value = member,
+                            options = allRemarks,
+                            onValueChange = { newVal ->
+                                members = members.toMutableList().also { if (index < it.size) it[index] = newVal }
+                            },
+                            editable = true,
+                            inset = false,
+                            modifier = Modifier.weight(1f).padding(vertical = 2.dp)
+                        )
+                        com.v2ray.ang.ui.compose.satra.SatraIconButton(icon = com.v2ray.ang.ui.compose.satra.SatraIcons.Minus, contentDescription = stringResource(R.string.acc_remove), onClick = {
+                            if (member.isBlank()) {
+                                val (remainingMembers, remainingKeys) = withoutProxyChainMember(members, memberKeys, memberKey)
+                                members = remainingMembers
+                                memberKeys = remainingKeys
+                            } else {
+                                memberToDeleteKey = memberKey
+                            }
+                        }, tint = sc.danger)
                     }
                 }
             }
         }
+        item(key = "add_member") {
+            com.v2ray.ang.ui.compose.satra.LazyGroupRow(count - 1, count) {
+                com.v2ray.ang.ui.compose.satra.SatraRow(
+                    title = stringResource(R.string.acc_add_member),
+                    icon = com.v2ray.ang.ui.compose.satra.SatraIcons.Plus,
+                    onClick = {
+                        members = members + ""
+                        memberKeys = memberKeys + UUID.randomUUID().toString()
+                    },
+                )
+            }
+        }
+        item(key = "footer") { com.v2ray.ang.ui.compose.satra.GroupFooter(stringResource(R.string.sx_chain_footer)) }
     }
 
     if (showProfileDeleteConfirm) {

@@ -1,6 +1,109 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name" translatable="false">v2rayNG</string>
+    <string name="app_name" translatable="false">SatraNG</string>
+    <string name="satra_status_connected">Connected</string>
+    <string name="satra_status_ready">Ready to connect</string>
+    <string name="satra_status_connecting">Connecting…</string>
+    <string name="satra_brand_tagline">Secure path, clear signal</string>
+    <string name="satra_nav_home">Home</string>
+    <string name="satra_nav_locations">Locations</string>
+    <string name="satra_nav_subs">Subscriptions</string>
+    <string name="satra_nav_more">More</string>
+    <string name="satra_nav_configs">Configs</string>
+    <string name="satra_nav_logs">Logs</string>
+    <string name="satra_nav_settings">Settings</string>
+    <string name="satra_capsule_connect">Connect</string>
+    <string name="satra_capsule_connecting">Connecting…</string>
+    <string name="satra_capsule_connected">Connected</string>
+    <string name="satra_capsule_failed">Connection failed</string>
+    <string name="satra_capsule_ready">Ready</string>
+    <string name="satra_capsule_slide_on">Slide to connect</string>
+    <string name="satra_capsule_slide_off">Slide to disconnect</string>
+    <string name="satra_capsule_a11y">VPN power: %1$s</string>
+    <string name="satra_home_empty_hint">Paste a subscription link from clipboard</string>
+    <string name="satra_home_headline_ready">Not protected</string>
+    <string name="satra_home_headline_connected">You are protected</string>
+    <string name="satra_home_headline_connecting">Securing…</string>
+    <string name="satra_home_headline_failed">Not protected</string>
+
+    <string name="satra_home_quota_time">Time left</string>
+    <string name="satra_home_quota_data">Data left</string>
+    <string name="satra_home_quota_days_of">%1$d / %2$d days</string>
+    <string name="satra_home_quota_data_of">%1$s / %2$s</string>
+
+    <string name="satra_home_region_fallback">Choose a location</string>
+    <string name="satra_home_traffic_used">Used %1$s</string>
+    <string name="satra_home_traffic_left">Left %1$s</string>
+    <string name="satra_home_ping_a11y">Current ping %1$d milliseconds</string>
+    <string name="satra_home_ping_none_a11y">No ping yet</string>
+    <string name="satra_orb_a11y">Toggle VPN</string>
+    <string name="satra_settings_logs">Logs</string>
+    <string name="satra_settings_logs_subtitle">Diagnostics and core output</string>
+    <string name="satra_subs_title">Subscriptions</string>
+    <string name="satra_subs_add">Add</string>
+    <string name="satra_subs_enabled">Enabled</string>
+    <string name="satra_auto_connect">Auto-connect</string>
+    <string name="satra_back">Back</string>
+    <string name="satra_sub_settings">Subscription settings</string>
+    <string name="satra_log_normal">Normal</string>
+    <string name="satra_log_debug">Debug</string>
+    <string name="satra_log_trace">Trace</string>
+    <string name="satra_log_copy">Copy</string>
+    <string name="satra_log_clear">Clear</string>
+    <string name="satra_log_share">Share</string>
+    <string name="satra_log_clear_confirm">Clear all log lines?</string>
+
+    <string name="satra_sub_show_usage">Show usage</string>
+    <string name="satra_sub_show_expire">Show expiry</string>
+    <string name="satra_sub_show_announce">Show announcement</string>
+    <string name="satra_sub_show_support">Show support links</string>
+    <string name="satra_sub_device_limit_note">Device limits are not sent in standard subscription headers</string>
+    <string name="satra_liquid_catalog">Liquid Glass catalog</string>
+
+    <string name="satra_manage_subscription">Manage subscription</string>
+    <string name="satra_sort_by_name">Name</string>
+    <string name="satra_sort_by_ping">Ping</string>
+    <string name="satra_sort_by_country">Country</string>
+    <string name="satra_locations_empty">No locations yet. Refresh a subscription first.</string>
+    <string name="satra_sub_announce">Announcement</string>
+    <string name="satra_sub_support">Support</string>
+    <string name="satra_sub_profile_page">Profile page</string>
+    <string name="satra_sub_last_updated">Updated %1$s</string>
+    <string name="satra_sub_interval">Refresh every %1$dh</string>
+    <string name="satra_sub_days_left">%1$d days left</string>
+    <string name="satra_sub_hours_left">%1$d hours left</string>
+    <string name="satra_notif_control">Notification control</string>
+    <string name="satra_notif_preview">Live preview</string>
+    <string name="satra_notif_show_speed">Show speed</string>
+    <string name="satra_notif_show_location">Show location</string>
+    <string name="satra_notif_action_stop">Stop action</string>
+    <string name="satra_notif_action_restart">Restart action</string>
+    <string name="satra_notif_open_system">System channel settings</string>
+    <string name="satra_notif_channels">Channels: VPN · subscription · test</string>
+    <string name="satra_choose_location">Choose location</string>
+    <string name="satra_best_location">Best available</string>
+    <string name="satra_search_locations">Search locations</string>
+    <string name="satra_ping">Ping</string>
+    <string name="satra_test_all_ping">Test all</string>
+    <string name="satra_sub_usage">Data usage</string>
+    <string name="satra_sub_remaining">Remaining</string>
+    <string name="satra_sub_unlimited">Unlimited</string>
+    <string name="satra_sub_expires">Expires</string>
+    <string name="satra_sub_expired">Expired</string>
+    <string name="satra_sub_no_expiry">No expiry</string>
+    <string name="satra_sub_refresh">Refresh</string>
+    <string name="satra_sub_servers_count">%d servers</string>
+    <string name="satra_sub_low_quota">Less than 10%% data left</string>
+    <string name="satra_sub_near_expire">Subscription expires soon</string>
+    <string name="satra_sub_add">Add subscription</string>
+    <string name="satra_sub_empty">Add a 3x-ui subscription link to get started</string>
+    <string name="satra_sub_hub_hint">Traffic, expiry, and panel announcements from your 3x-ui subscription</string>
+    <string name="satra_unknown_location">Unknown</string>
+    <string name="satra_more_advanced">Advanced</string>
+    <string name="satra_manage_sub">Manage subscription</string>
+    <string name="satra_sub_updated">Updated %1$s</string>
+    <string name="satra_notif_control_desc">Preview and customize the VPN notification</string>
+    <string name="satra_notif_title_connected">Connected</string>
     <string name="app_widget_name">Switch</string>
     <string name="app_tile_name">Switch</string>
     <string name="app_tile_first_use">Add a profile in the app before using this feature.</string>
@@ -14,7 +117,7 @@
     <string name="pull_down_to_refresh">Please pull down to refresh!</string>
 
     <!-- Notifications -->
-    <string name="notification_channel_service">v2rayNG service</string>
+    <string name="notification_channel_service">SatraNG service</string>
     <string name="notification_channel_subscription_updates">Subscription updates</string>
     <string name="notification_channel_connection_checks">Connection checks</string>
     <string name="notification_action_stop_v2ray">Stop</string>
@@ -27,7 +130,7 @@
     <string name="toast_services_failure">Failed to start service</string>
 
     <!--ServerActivity-->
-    <string name="title_server">Config</string>
+    <string name="title_server">SatraNG</string>
     <string name="menu_item_add_config">Add config</string>
     <string name="menu_item_save_config">Save config</string>
     <string name="menu_item_edit_config">Edit config</string>
@@ -231,7 +334,7 @@
 
     <string name="title_pref_vpn_interface_address">VPN Interface Address</string>
 
-    <string name="title_pref_vpn_mtu">VPN MTU (default 1500)</string>
+    <string name="title_pref_vpn_mtu">VPN MTU (default 1420)</string>
 
 
     <string name="title_pref_domestic_dns">Direct DNS (optional)</string>
@@ -561,4 +664,82 @@
     <string name="connection_test_empty_message">no details available</string>
     <string name="value_unknown">unknown</string>
 
+    <string name="satra_settings_hub_title">Control center</string>
+    <string name="satra_settings_hub_subtitle">Connection, privacy, apps, and performance — organized by category.</string>
+    <string name="satra_settings_section_connection">Connection</string>
+    <string name="satra_settings_section_apps">App coverage</string>
+    <string name="satra_settings_section_experience">Experience</string>
+    <string name="satra_settings_section_performance">Performance</string>
+    <string name="satra_settings_section_system">System</string>
+    <string name="satra_settings_mode_vpn">VPN mode</string>
+    <string name="satra_settings_mode_proxy">Proxy only</string>
+    <string name="satra_settings_port_chip">Port %1$s</string>
+    <string name="satra_settings_coverage_all">All apps through tunnel</string>
+    <string name="satra_settings_coverage_selected">Selected apps only (per-app on)</string>
+    <string name="satra_settings_per_app_master">Per-app proxy</string>
+    <string name="satra_settings_per_app_master_sub">Off = every app uses the tunnel. On = only the apps you pick.</string>
+    <string name="satra_settings_per_app_toggle_a11y">Toggle per-app proxy</string>
+    <string name="satra_settings_on">On</string>
+    <string name="satra_settings_off">Off</string>
+    <string name="satra_settings_per_app_manage">Choose apps</string>
+    <string name="satra_settings_per_app_manage_sub">Pick which apps use or bypass the tunnel</string>
+    <string name="satra_settings_cat_mode_sub">VPN, proxy-only, and root</string>
+    <string name="satra_settings_cat_tunnel_sub">DNS, IPv6, HEV TUN, MTU</string>
+    <string name="satra_settings_cat_core_sub">Local SOCKS, sniffing, remote DNS</string>
+    <string name="satra_settings_cat_ui_sub">Language, theme, layout</string>
+    <string name="satra_settings_cat_notif_sub">Notification actions and details</string>
+    <string name="satra_settings_cat_routing_sub">Domain and IP routing rules</string>
+    <string name="satra_settings_cat_mux_sub">Mux concurrency (may break some apps)</string>
+    <string name="satra_settings_cat_fragment_sub">TLS fragment options</string>
+    <string name="satra_settings_cat_obs_sub">Auto select by ping or load</string>
+    <string name="satra_settings_cat_advanced_sub">Boot, always-on VPN, test URLs</string>
+    <string name="satra_settings_tunnel_reset">Apply Satra tunnel presets</string>
+    <string name="satra_settings_tunnel_reset_sub">Port 28888, HEV, local DNS, full-device coverage</string>
+    <string name="satra_settings_tunnel_reset_done">Satra tunnel presets applied</string>
+    <string name="satra_settings_safety">Safety &amp; Play Protect</string>
+    <string name="satra_settings_safety_sub">Why Google shows a warning for sideloaded APKs</string>
+    <string name="satra_settings_safety_title">Safe install tips</string>
+    <string name="satra_settings_safety_body">SatraNG is signed with our release key and is not distributed through Play Store yet. Always install only APKs from your trusted SatraNG folder.</string>
+    <string name="satra_settings_play_protect_title">About the Play Protect warning</string>
+    <string name="satra_settings_play_protect_body">Play Protect has not verified this developer signature yet. That is not a malware verdict. Tap Install anyway to continue. Choose Don\'t send if you do not want to upload the APK. A stable release signature reduces this warning over time.</string>
+
+    <string name="satra_home_add_config">Add config</string>
+    <string name="satra_home_ping_all">Test ping</string>
+    <string name="satra_home_add_config_sub">Paste from clipboard — subscription link or node URL</string>
+
+    <string name="satra_home_quick_config">Quick config</string>
+    <string name="satra_home_support">Support</string>
+    <string name="satra_settings_connection_sub">Mode, core, multiplexing</string>
+    <string name="satra_settings_privacy_title">Privacy</string>
+    <string name="satra_settings_privacy_sub">DNS, sniffing, kill-switch</string>
+    <string name="satra_settings_per_app_sub">Include / exclude apps</string>
+    <string name="satra_settings_routing_sub">Rules and domain strategy</string>
+    <string name="satra_settings_backup_sub">Export &amp; restore</string>
+    <string name="satra_settings_about_sub">Version &amp; licenses</string>
+    <string name="satra_configs_add">Add</string>
+    <string name="satra_configs_test">Test</string>
+    <string name="satra_configs_actions_fab">Config actions</string>
+    <string name="satra_configs_ungrouped">Ungrouped</string>
+    <string name="satra_sub_update_all">Update all</string>
+    <string name="satra_sub_update_one">Update</string>
+
+    <string name="satra_usage_title">Usage</string>
+    <string name="satra_usage_daily">Daily usage</string>
+    <string name="satra_usage_peak_hours">Peak hours</string>
+    <string name="satra_usage_top_apps">Top apps</string>
+    <string name="satra_usage_empty">No data yet</string>
+    <string name="satra_usage_hour_label">%1$d:00</string>
+    <string name="satra_usage_permission_hint">Grant usage access to see per-app traffic through the VPN.</string>
+    <string name="satra_usage_grant_permission">Open usage access</string>
+    <string name="satra_limit_channel">App limits</string>
+    <string name="satra_limit_notif_title">App limit reached</string>
+    <string name="satra_limit_notif_volume">%1$s hit its data limit and left the VPN.</string>
+    <string name="satra_limit_notif_time">%1$s hit its time limit and left the VPN.</string>
+    <string name="satra_limit_action_plus_30mb">+30 MB</string>
+    <string name="satra_limit_action_plus_10min">+10 min</string>
+    <string name="satra_limit_action_clear">Clear limit</string>
+    <string name="satra_limit_action_pause_24h">Skip 24h</string>
+    <string name="satra_limit_set_100mb">Limit 100 MB</string>
+    <string name="satra_limit_set_30min">Limit 30 min</string>
+    <string name="satra_limit_status">Limit %1$s / %2$s min · used %3$s / %4$s min</string>
 </resources>

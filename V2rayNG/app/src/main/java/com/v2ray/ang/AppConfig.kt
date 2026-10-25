@@ -59,6 +59,10 @@ object AppConfig {
     const val PREF_APP_LOCALE_MIGRATED = "pref_app_locale_migrated"
     const val PREF_UI_MODE_NIGHT = "pref_ui_mode_night"
     const val PREF_DYNAMIC_COLOR = "pref_dynamic_color"
+    const val PREF_NOTIF_SHOW_SPEED = "pref_notif_show_speed"
+    const val PREF_NOTIF_SHOW_LOCATION = "pref_notif_show_location"
+    const val PREF_NOTIF_ACTION_STOP = "pref_notif_action_stop"
+    const val PREF_NOTIF_ACTION_RESTART = "pref_notif_action_restart"
     const val PREF_IPV6_ENABLED = "pref_ipv6_enabled"
     const val PREF_PREFER_IPV6 = "pref_prefer_ipv6"
     const val PREF_PROXY_SHARING = "pref_proxy_sharing_enabled"
@@ -89,6 +93,14 @@ object AppConfig {
     const val PREF_AUTO_REMOVE_INVALID_AFTER_TEST = "pref_auto_remove_invalid_after_test"
     const val PREF_AUTO_SORT_AFTER_TEST = "pref_auto_sort_after_test"
     const val PREF_REAL_PING_CONCURRENCY = "pref_real_ping_concurrency"
+    /** Auto-select best config and reconnect after unexpected drop. Default ON. */
+    const val PREF_AUTO_CONNECT = "pref_auto_connect"
+    /** Start the VPN as soon as the app is opened. */
+    const val PREF_QUICK_CONNECT = "pref_quick_connect"
+    /** Show the advanced settings entries on the Settings tab. */
+    const val PREF_SHOW_ADVANCED = "pref_show_advanced"
+    /** Persisted short flag: user stopped VPN manually — blocks auto reconnect. */
+    const val PREF_USER_REQUESTED_STOP = "pref_user_requested_stop"
 
     /** Cache keys. */
     const val CACHE_SUBSCRIPTION_ID = "cache_subscription_id"
@@ -128,7 +140,7 @@ object AppConfig {
     const val GITHUB_DOWNLOAD_URL = "$GITHUB_URL/%s/releases/latest/download"
     const val ANDROID_PACKAGE_NAME_LIST_URL = "$GITHUB_RAW_URL/2dust/androidpackagenamelist/master/proxy.txt"
     const val APP_URL = "$GITHUB_URL/2dust/v2rayNG"
-    const val APP_API_URL = "https://api.github.com/repos/2dust/v2rayNG/releases"
+    const val APP_API_URL = "https://api.github.com/repos/gitsatra/SatraNG/releases"
     const val APP_ISSUES_URL = "$APP_URL/issues"
     const val APP_WIKI_MODE = "$APP_URL/wiki/Mode"
     const val APP_PRIVACY_POLICY = "$GITHUB_RAW_URL/2dust/v2rayNG/master/CR.md"
@@ -161,8 +173,11 @@ object AppConfig {
     const val GEOIP_ONLY_CN_PRIVATE_URL = "$GITHUB_RAW_URL/Loyalsoldier/geoip/release/$GEOIP_ONLY_CN_PRIVATE_DAT"
 
     /** Ports and addresses for various services. */
-    const val PORT_LOCAL_DNS = "10853"
-    const val PORT_SOCKS = "10808"
+    /** Memorable SatraNG local ports (avoid clash with stock v2rayNG 10808/10853). */
+    const val PORT_LOCAL_DNS = "28853"
+    const val PORT_SOCKS = "28888"
+    const val LEGACY_PORT_LOCAL_DNS = "10853"
+    const val LEGACY_PORT_SOCKS = "10808"
     const val WIREGUARD_LOCAL_ADDRESS_V4 = "172.16.0.2/32"
     const val WIREGUARD_LOCAL_ADDRESS_V6 = "2606:4700:110:8f81:d551:a0:532e:a2b3/128"
     const val WIREGUARD_LOCAL_MTU = "1420"
@@ -171,10 +186,29 @@ object AppConfig {
 
     /** Shared defaults for settings shown in the UI and consumed by config generation. */
     const val DEFAULT_SOCKS_ENABLE_UDP = true
+    const val DEFAULT_LOCAL_DNS_ENABLED = true
+    const val DEFAULT_SNIFFING_ENABLED = true
+    /**
+     * SatraNG uses the Xray tunnel engine by default on Android 10+ so per-app and category limits
+     * work out of the box (the core can see which app owns each connection). Older Android has no
+     * owner lookup, so the lighter hev engine stays the default there.
+     */
+    @JvmField
+    val DEFAULT_USE_HEV_TUNNEL = android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.Q
+    const val DEFAULT_APPEND_HTTP_PROXY = true
+    const val DEFAULT_IPV6_ENABLED = true
     const val DEFAULT_OUTBOUND_DOMAIN_RESOLVE_METHOD = "1"
     const val DEFAULT_VPN_BYPASS_LAN = "1"
     const val DEFAULT_HEV_TUNNEL_LOGLEVEL = "warn"
     const val DEFAULT_MUX_XUDP_CONCURRENCY = "8"
+    const val PREF_SATRA_LOCAL_PORTS_MIGRATED = "pref_satra_local_ports_migrated_v1"
+    const val PREF_SATRA_ENGINE_XRAY_MIGRATED = "pref_satra_engine_xray_migrated_v1"
+    /** Refresh auto-updating subscriptions each time the app is opened (cold start). Default on. */
+    const val PREF_SATRA_SUB_UPDATE_ON_OPEN = "pref_satra_sub_update_on_open"
+    const val PREF_SATRA_SUB_AUTO_MIGRATED = "pref_satra_sub_auto_migrated_v1"
+    /** Default background refresh interval for subscriptions, minutes (WorkManager minimum). */
+    const val DEFAULT_SUB_INTERVAL_MINUTES = 15L
+    const val PREF_SATRA_TUNNEL_DEFAULTS_SEEDED = "pref_satra_tunnel_defaults_seeded_v1"
 
     /** Message constants for communication. */
     const val MSG_REGISTER_CLIENT = 1
@@ -187,6 +221,7 @@ object AppConfig {
     const val MSG_STATE_STOP = 4
     const val MSG_STATE_STOP_SUCCESS = 41
     const val MSG_STATE_RESTART = 5
+    const val MSG_STATE_RELOAD = 9
     const val MSG_MEASURE_DELAY = 6
     const val MSG_MEASURE_DELAY_RESULT = 61
     const val MSG_MEASURE_DELAY_CANCEL = 62
@@ -195,6 +230,16 @@ object AppConfig {
     const val MSG_MEASURE_CONFIG_SUCCESS = 72
     const val MSG_MEASURE_CONFIG_NOTIFY = 73
     const val MSG_MEASURE_CONFIG_FINISH = 74
+    /** Background exit-country detection for freshly imported configs (runs in :tasks). */
+    const val MSG_LOCATE_START = 101
+    const val MSG_LOCATE_CANCEL = 102
+    const val MSG_LOCATE_RESULT = 103
+    const val MSG_LOCATE_FINISH = 104
+    const val MSG_SPEED_START = 105
+    const val MSG_SPEED_CANCEL = 106
+    const val MSG_SPEED_RESULT = 107
+    const val MSG_SPEED_FINISH = 108
+    const val MSG_SPEED_PROGRESS = 109
 
     const val MSG_SUB_UPDATE_START = 8
     const val MSG_SUB_UPDATE_CANCEL = 81
@@ -222,7 +267,8 @@ object AppConfig {
 
     /** Give a good name to this, IDK*/
     const val VPN = "VPN"
-    const val VPN_MTU = 1500
+    /** 1420 reduces fragmentation on cellular and common tunnel overheads vs 1500. */
+    const val VPN_MTU = 1420
 
     /** Root (system-wide) mode runtime constants. */
     const val ROOT_RUNTIME_DIR = "sys_cache"

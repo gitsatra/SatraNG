@@ -40,6 +40,8 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.v2ray.ang.R
+import com.v2ray.ang.ui.compose.satra.Satra
+import com.v2ray.ang.ui.compose.satra.SatraShapes
 
 @Composable
 fun ConfirmDialog(
@@ -49,6 +51,7 @@ fun ConfirmDialog(
     dismissText: String? = stringResource(R.string.action_cancel),
     confirmIcon: @Composable (() -> Unit)? = null,
     messageTextAlign: TextAlign = TextAlign.Start,
+    destructive: Boolean = false,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -62,7 +65,7 @@ fun ConfirmDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = title?.let { { Text(it) } },
+        title = title?.let { { Text(it, style = Satra.type.title2) } },
         text = {
             Text(
                 text = message,
@@ -74,7 +77,10 @@ fun ConfirmDialog(
         confirmButton = {
             TextButton(
                 onClick = { onConfirm(); onDismiss() },
-                modifier = Modifier.focusRequester(confirmFocusRequester)
+                modifier = Modifier.focusRequester(confirmFocusRequester),
+                colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
+                    contentColor = if (destructive) Satra.colors.danger else Satra.colors.accent,
+                ),
             ) {
                 confirmIcon?.invoke()
                 if (confirmIcon != null) Spacer(Modifier.width(8.dp))
@@ -91,7 +97,10 @@ fun ConfirmDialog(
                 }
             }
         },
-        containerColor = MaterialTheme.colorScheme.surface
+        containerColor = Satra.colors.surfaceRaised,
+        shape = SatraShapes.XLarge,
+        titleContentColor = Satra.colors.textPrimary,
+        textContentColor = Satra.colors.textSecondary,
     )
 }
 
@@ -105,6 +114,7 @@ fun DeleteConfirmDialog(
     ConfirmDialog(
         message = if (itemName.isNullOrBlank()) message else "$message\n\n$itemName",
         messageTextAlign = TextAlign.Center,
+        destructive = true,
         confirmText = stringResource(R.string.action_delete),
         confirmIcon = {
             Icon(
@@ -137,7 +147,7 @@ fun InputDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(title) },
+        title = { Text(title, style = Satra.type.title2) },
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -151,15 +161,9 @@ fun InputDialog(
                         singleLine = false,
                         maxLines = 5,
                         visualTransformation = field.visualTransformation,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                            cursorColor = MaterialTheme.colorScheme.secondary,
-                            selectionColors = TextSelectionColors(
-                                handleColor = MaterialTheme.colorScheme.secondary,
-                                backgroundColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.4f)
-                            )
-                        ),
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(autoCorrectEnabled = false),
+                        colors = satraFieldColors(),
+                        shape = SatraShapes.Medium,
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -171,7 +175,10 @@ fun InputDialog(
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(dismissText) }
         },
-        containerColor = MaterialTheme.colorScheme.surface
+        containerColor = Satra.colors.surfaceRaised,
+        shape = SatraShapes.XLarge,
+        titleContentColor = Satra.colors.textPrimary,
+        textContentColor = Satra.colors.textSecondary,
     )
 }
 
@@ -195,7 +202,10 @@ fun QRCodeDialog(
         confirmButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) }
         },
-        containerColor = MaterialTheme.colorScheme.surface
+        containerColor = Satra.colors.surfaceRaised,
+        shape = SatraShapes.XLarge,
+        titleContentColor = Satra.colors.textPrimary,
+        textContentColor = Satra.colors.textSecondary,
     )
 }
 
@@ -216,7 +226,7 @@ fun <T> SelectListDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = title?.let { { Text(it) } },
+        title = title?.let { { Text(it, style = Satra.type.title2) } },
         text = {
             LazyColumn {
                 items(options) { option ->
@@ -237,7 +247,8 @@ fun <T> SelectListDialog(
                         if (showRadio) {
                             RadioButton(
                                 selected = isSelected,
-                                onClick = null
+                                onClick = null,
+                                colors = androidx.compose.material3.RadioButtonDefaults.colors(selectedColor = Satra.colors.accent),
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                         }
@@ -256,6 +267,9 @@ fun <T> SelectListDialog(
                 Text(stringResource(R.string.action_cancel))
             }
         },
-        containerColor = MaterialTheme.colorScheme.surface
+        containerColor = Satra.colors.surfaceRaised,
+        shape = SatraShapes.XLarge,
+        titleContentColor = Satra.colors.textPrimary,
+        textContentColor = Satra.colors.textSecondary,
     )
 }

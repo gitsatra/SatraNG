@@ -4,11 +4,19 @@ import android.content.Intent
 import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
+import android.os.SystemClock
 import android.view.KeyEvent
 import androidx.activity.compose.BackHandler
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
+import android.content.ActivityNotFoundException
+import android.provider.Settings
+import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import com.v2ray.ang.AngApplication
 import com.v2ray.ang.AppConfig
@@ -44,7 +52,17 @@ import com.v2ray.ang.ui.server.ServerVlessActivity
 import com.v2ray.ang.ui.server.ServerVmessActivity
 import com.v2ray.ang.ui.server.ServerWireguardActivity
 import com.v2ray.ang.ui.settings.SettingsActivity
-import com.v2ray.ang.ui.subscription.SubSettingActivity
+import com.v2ray.ang.handler.AppUsageReader
+import com.v2ray.ang.handler.UsageLimitEngine
+import com.v2ray.ang.handler.UsageNotifier
+import com.v2ray.ang.ui.app.AppNav
+import com.v2ray.ang.ui.app.SatraApp
+import com.v2ray.ang.ui.app.Tabs
+import com.v2ray.ang.ui.settings.SettingsDestination
+import com.v2ray.ang.ui.subscription.SubEditActivity
+import com.v2ray.ang.ui.subs.SubsViewModel
+import com.v2ray.ang.ui.usage.UsageViewModel
+import kotlinx.coroutines.delay
 import com.v2ray.ang.ui.userasset.UserAssetActivity
 import com.v2ray.ang.util.LogUtil
 import com.v2ray.ang.util.Utils
@@ -52,15 +70,25 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class MainActivity : HelperBaseComponentActivity() {
+class MainActivity : HelperBaseComponentActivity(), AppNav {
 
     private val mainViewModel: MainViewModel by viewModels {
         MainViewModel.Factory(application, MainRepository(application as AngApplication))
     }
 
+    private val subsViewModel: SubsViewModel by viewModels()
+    private val usageViewModel: UsageViewModel by viewModels()
+    private var openTab by mutableIntStateOf(Tabs.Home)
+
     private val requestVpnPermission =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            if (it.resultCode == RESULT_OK) startV2Ray()
+            if (it.resultCode == RESULT_OK) startV2Ray() else mainViewModel.cancelConnect()
+        }
+
+    private val subEditLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            subsViewModel.reload()
+            mainViewModel.onAction(MainAction.RefreshGroups)
         }
 
     private val profileEditorLauncher =
@@ -91,36 +119,197 @@ class MainActivity : HelperBaseComponentActivity() {
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splash = installSplashScreen()
+        // Brand splash stays a short beat (logo still readable) instead of a fixed 0.5s stall.
+        val keepUntil = SystemClock.elapsedRealtime() + 220L
+        splash.setKeepOnScreenCondition { SystemClock.elapsedRealtime() < keepUntil }
         super.onCreate(savedInstanceState)
         mainViewModel.onAction(MainAction.Initialize)
 
         checkAndRequestPermission(PermissionType.POST_NOTIFICATIONS) {}
+        applyOpenTab(intent)
+        if (savedInstanceState == null && MmkvManager.decodeSettingsBool(AppConfig.PREF_QUICK_CONNECT, false)) {
+            lifecycleScope.launch {
+                delay(900)
+                val st = mainViewModel.uiState.value
+                if (!st.isRunning && st.phase == ConnectPhase.Idle && !st.selectedGuid.isNullOrEmpty()) handleFabAction()
+            }
+        }
+
+        lifecycleScope.launch {
+            var last = mainViewModel.smartConnectRequest.value
+            mainViewModel.smartConnectRequest.collect { tick ->
+                if (tick > last) {
+                    last = tick
+                    if (mainViewModel.uiState.value.isRunning) LauncherManager.restartService(this@MainActivity)
+                    else requestServiceStart()
+                }
+            }
+        }
+
+        lifecycleScope.launch {
+            var last = mainViewModel.autoReconnectRequest.value
+            mainViewModel.autoReconnectRequest.collect { tick ->
+                if (tick > last) {
+                    last = tick
+                    if (!mainViewModel.uiState.value.isRunning) {
+                        requestServiceStart()
+                    }
+                }
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        applyOpenTab(intent)
+    }
+
+    private fun applyOpenTab(intent: Intent?) {
+        if (intent?.getStringExtra(UsageNotifier.EXTRA_OPEN_TAB) == "usage") openTab = Tabs.Usage
+        handleToggleIntent(intent)
+    }
+
+    /** Tile / widget / shortcut asked to connect (usually because VPN consent was needed). */
+    private fun handleToggleIntent(intent: Intent?) {
+        val action = intent?.action ?: return
+        if (action != com.v2ray.ang.core.ToggleSurfaces.ACTION_CONNECT && action != com.v2ray.ang.core.ToggleSurfaces.ACTION_SMART_CONNECT) return
+        intent.action = Intent.ACTION_MAIN // handle once (not again on rotation)
+        openTab = Tabs.Home
+        lifecycleScope.launch {
+            delay(350L)
+            if (action == com.v2ray.ang.core.ToggleSurfaces.ACTION_SMART_CONNECT) {
+                if (!mainViewModel.uiState.value.isRunning) action(MainAction.SmartConnect)
+            } else if (!mainViewModel.uiState.value.isRunning) {
+                requestServiceStart()
+            }
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // The selected config may have changed: keep the widget/tile label in step.
+        com.v2ray.ang.core.ToggleSurfaces.refresh(applicationContext, mainViewModel.uiState.value.isRunning)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        val restart = SettingsChangeManager.consumeRestartService()
+        val refresh = SettingsChangeManager.consumeSetupGroupTab()
+        mainViewModel.refreshUiSettings()
+        if (refresh) {
+            mainViewModel.onAction(MainAction.RefreshGroups)
+            subsViewModel.reload()
+        }
+        if (restart) LauncherManager.restartService(this)
+        if (mainViewModel.uiState.value.isRunning) {
+            mainViewModel.refreshExitGeoForSelectedServer(delayMs = 0L)
+        }
     }
 
     @Composable
     override fun ScreenContent() {
         BackHandler { moveTaskToBack(false) }
-        MainScreen(
-            mainViewModel = mainViewModel,
-            onAction = { action ->
-                when (action) {
-                    MainAction.ToggleService -> handleFabAction()
-                    MainAction.TestCurrentServer -> handleLayoutTestClick()
-                    MainAction.ImportQRcode -> importQRcode()
-                    MainAction.ImportClipboard -> importClipboard()
-                    MainAction.ImportConfigLocal -> importConfigLocal()
-                    is MainAction.ImportManually -> importManually(action.type)
-                    MainAction.RestartService -> LauncherManager.restartServiceOrStart(this, ::requestServiceStart)
-                    MainAction.LocateSelectedServer -> mainViewModel.triggerLocateSelectedServer()
-                    is MainAction.SelectServer -> setSelectServer(action.guid)
-                    is MainAction.EditServer -> editServer(action.guid, action.profile)
-                    is MainAction.ShareClipboard -> shareToClipboard(action.guid)
-                    is MainAction.ShareFullContent -> shareFullContentAsync(action.guid)
-                    else -> mainViewModel.onAction(action)
-                }
-            },
-            onNavigate = { route -> navigateTo(route) },
+        SatraApp(
+            mainVm = mainViewModel,
+            subsVm = subsViewModel,
+            usageVm = usageViewModel,
+            nav = this,
+            initialTab = openTab,
         )
+    }
+
+    // ---- AppNav ----
+
+    override fun action(action: MainAction) {
+        when (action) {
+            MainAction.ToggleService -> handleFabAction()
+            MainAction.TestCurrentServer -> handleLayoutTestClick()
+            MainAction.ImportQRcode -> importQRcode()
+            MainAction.ImportClipboard -> importClipboard()
+            MainAction.ImportConfigLocal -> importConfigLocal()
+            is MainAction.ImportManually -> importManually(action.type)
+            MainAction.RestartService -> LauncherManager.restartServiceOrStart(this, ::requestServiceStart)
+            MainAction.LocateSelectedServer -> mainViewModel.triggerLocateSelectedServer()
+            is MainAction.SelectServer -> setSelectServer(action.guid)
+            is MainAction.EditServer -> editServer(action.guid, action.profile)
+            is MainAction.ShareClipboard -> {
+                if (shareToClipboard(action.guid)) toastSuccess(R.string.toast_success) else toastError(R.string.toast_failure)
+            }
+            is MainAction.ShareFullContent -> shareFullContentAsync(action.guid)
+            else -> mainViewModel.onAction(action)
+        }
+    }
+
+    override fun navigate(destination: MainDestination) = navigateTo(destination)
+
+    override fun openSettingsPage(destination: SettingsDestination) {
+        settingsActivityLauncher.launch(
+            Intent(this, SettingsActivity::class.java).putExtra(SettingsActivity.EXTRA_DESTINATION, destination.name),
+        )
+    }
+
+    override fun editSubscription(subId: String?) {
+        subEditLauncher.launch(Intent(this, SubEditActivity::class.java).apply { subId?.let { putExtra("subId", it) } })
+    }
+
+    override fun scanQr(onResult: (String) -> Unit) {
+        launchQRCodeScanner { result -> if (!result.isNullOrBlank()) onResult(result) }
+    }
+
+    override fun openUsageAccess() {
+        try {
+            startActivity(AppUsageReader.accessSettingsIntent(this))
+        } catch (e: ActivityNotFoundException) {
+            LogUtil.e(AppConfig.TAG, "Usage access settings unavailable", e)
+            startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        }
+    }
+
+    override fun enableAppEnforcement() {
+        UsageLimitEngine.enableAppEnforcement()
+        usageViewModel.refreshApps()
+        LauncherManager.restartIfRunning(this) { toast(R.string.sx_engine_applied) }
+    }
+
+    override fun openSystemVpnSettings() {
+        try {
+            startActivity(Intent(Settings.ACTION_VPN_SETTINGS))
+        } catch (e: ActivityNotFoundException) {
+            LogUtil.e(AppConfig.TAG, "Cannot open system VPN settings", e)
+            toastError(R.string.toast_system_vpn_settings_unavailable)
+        }
+    }
+
+    override fun share(text: String) {
+        startActivity(
+            Intent.createChooser(
+                Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text),
+                null,
+            ),
+        )
+    }
+
+    override fun copy(text: String) {
+        Utils.setClipboard(this, text)
+        toastSuccess(R.string.toast_success)
+    }
+
+    override fun reconnectForModeChange() {
+        // The prompt replaces the silent restart-on-resume for this change.
+        SettingsChangeManager.consumeRestartService()
+        if (!mainViewModel.uiState.value.isRunning) return
+        if (SettingsManager.isVpnMode() && VpnService.prepare(this) != null) {
+            // Proxy-only -> VPN without VPN permission yet: stop, then go through the permission flow.
+            LauncherManager.stopService(this)
+            lifecycleScope.launch {
+                delay(700L)
+                requestServiceStart()
+            }
+        } else {
+            LauncherManager.restartIfRunning(this) { toast(R.string.sx_reconnected) }
+        }
     }
 
     private fun shareToClipboard(guid: String): Boolean =
@@ -138,7 +327,6 @@ class MainActivity : HelperBaseComponentActivity() {
 
     private fun navigateTo(destination: MainDestination) {
         val intent = when (destination) {
-            MainDestination.Subscriptions -> Intent(this, SubSettingActivity::class.java)
             MainDestination.PerAppProxy -> Intent(this, PerAppProxyActivity::class.java)
             MainDestination.Routing -> Intent(this, RoutingSettingActivity::class.java)
             MainDestination.UserAssets -> Intent(this, UserAssetActivity::class.java)
@@ -159,10 +347,26 @@ class MainActivity : HelperBaseComponentActivity() {
     }
 
     private fun handleFabAction() {
-        if (mainViewModel.uiState.value.isRunning) {
-            LauncherManager.stopService(this)
-        } else {
-            requestServiceStart()
+        val state = mainViewModel.uiState.value
+        when {
+            state.isRunning -> {
+                mainViewModel.beginDisconnect()
+                mainViewModel.markUserRequestedStop()
+                LauncherManager.stopService(this)
+            }
+            state.phase == ConnectPhase.Connecting -> {
+                // Second tap while connecting cancels the attempt.
+                mainViewModel.cancelConnect()
+                mainViewModel.markUserRequestedStop()
+                LauncherManager.stopService(this)
+            }
+            state.phase == ConnectPhase.Disconnecting -> Unit
+            else -> {
+                mainViewModel.beginConnect()
+                mainViewModel.markUserRequestedStart()
+                mainViewModel.prepareConnectGuid()
+                requestServiceStart()
+            }
         }
     }
 
@@ -176,14 +380,13 @@ class MainActivity : HelperBaseComponentActivity() {
     }
 
     private fun handleLayoutTestClick() {
-        if (mainViewModel.uiState.value.isRunning) {
-            mainViewModel.testCurrentServerRealPing()
-        }
+        mainViewModel.pingSelected()
     }
 
     private fun startV2Ray() {
         if (mainViewModel.uiState.value.selectedGuid.isNullOrEmpty()) {
             toast(R.string.title_file_chooser)
+            mainViewModel.cancelConnect()
             return
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.CINNAMON_BUN
@@ -270,6 +473,7 @@ class MainActivity : HelperBaseComponentActivity() {
 
     private fun setSelectServer(guid: String) {
         val selected = mainViewModel.uiState.value.selectedGuid
+        mainViewModel.markManualPick()
         if (guid != selected) {
             mainViewModel.updateSelectedGuid(guid)
             LauncherManager.restartService(this)

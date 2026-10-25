@@ -1,5 +1,6 @@
 package com.v2ray.ang.handler
 
+import com.v2ray.ang.AngApplication
 import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -35,6 +36,7 @@ object NotificationManager {
     private const val QUERY_INTERVAL_MS = 3000L
 
     private var lastQueryTime = 0L
+    private var lastTotals = UsageSampler.Totals()
     private var mBuilder: NotificationCompat.Builder? = null
     private var speedNotificationJob: Job? = null
     private var mNotificationManager: NotificationManager? = null
@@ -43,15 +45,20 @@ object NotificationManager {
      * Starts the speed notification.
      * @param currentConfig The current profile configuration.
      */
+    fun isSpeedNotificationRunning(): Boolean = speedNotificationJob != null
+
     fun startSpeedNotification() {
         if (MmkvManager.decodeSettingsBool(AppConfig.PREF_SPEED_ENABLED) != true) return
         if (speedNotificationJob != null || CoreServiceManager.isRunning() == false) return
 
         var lastZeroSpeed = false
+        lastTotals = UsageSampler.totals
 
         speedNotificationJob = CoroutineScope(Dispatchers.IO).launch {
+            val pm = AngApplication.application.getSystemService(android.content.Context.POWER_SERVICE) as? android.os.PowerManager
             while (isActive) {
-                lastZeroSpeed = updateSpeedNotificationOnce(lastZeroSpeed)
+                // Speed text is invisible with the screen off: skip the notification redraw.
+                if (pm?.isInteractive != false) lastZeroSpeed = updateSpeedNotificationOnce(lastZeroSpeed)
                 delay(QUERY_INTERVAL_MS)
             }
         }
@@ -91,24 +98,52 @@ object NotificationManager {
                 ""
             }
 
+        val prefs = NotificationPrefs.state.value
+        val title = service.getString(R.string.satra_notif_title_connected)
+        val subtitle = buildString {
+            if (prefs.showLocation && !currentConfig?.remarks.isNullOrBlank()) {
+                append(currentConfig?.remarks)
+            }
+            if (isEmpty()) append(service.getString(R.string.app_name))
+        }
         mBuilder = NotificationCompat.Builder(service, channelId)
-            .setSmallIcon(R.drawable.ic_stat_name)
-            .setContentTitle(currentConfig?.remarks ?: service.getString(R.string.app_name))
+            .setSmallIcon(R.drawable.ic_notif_satra)
+            .setContentTitle(title)
+            .setContentText(subtitle)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
             .setShowWhen(false)
             .setOnlyAlertOnce(true)
             .setContentIntent(contentPendingIntent)
-            .addAction(
+            .setColor(NOTIF_GREEN) // shown only while connected
+        if (prefs.actionStop) {
+            mBuilder?.addAction(
                 R.drawable.ic_delete_24dp,
                 service.getString(R.string.notification_action_stop_v2ray),
                 stopV2RayPendingIntent
             )
-            .addAction(
+        }
+        if (prefs.actionRestart) {
+            mBuilder?.addAction(
                 R.drawable.ic_restore_24dp,
                 service.getString(R.string.title_service_restart),
                 restartV2RayPendingIntent
             )
+        }
+
+        // Lock screen: the channel hides private text, so give it a public version that still
+        // carries Disconnect (no config name shown there).
+        val publicBuilder = NotificationCompat.Builder(service, channelId)
+            .setSmallIcon(R.drawable.ic_notif_satra)
+            .setContentTitle(title)
+            .setContentText(service.getString(R.string.app_name))
+            .setOngoing(true)
+            .setShowWhen(false)
+            .setContentIntent(contentPendingIntent)
+            .setColor(NOTIF_GREEN)
+            .addAction(R.drawable.ic_delete_24dp, service.getString(R.string.notification_action_stop_v2ray), stopV2RayPendingIntent)
+        mBuilder?.setPublicVersion(publicBuilder.build())
+        mBuilder?.setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
 
         //mBuilder?.setDefaults(NotificationCompat.FLAG_ONLY_ALERT_ONCE)
 
@@ -179,13 +214,8 @@ object NotificationManager {
      */
     private fun updateNotification(contentText: String?, proxyTraffic: Long, directTraffic: Long) {
         if (mBuilder != null) {
-            if (proxyTraffic < NOTIFICATION_ICON_THRESHOLD && directTraffic < NOTIFICATION_ICON_THRESHOLD) {
-                mBuilder?.setSmallIcon(R.drawable.ic_stat_name)
-            } else if (proxyTraffic > directTraffic) {
-                mBuilder?.setSmallIcon(R.drawable.ic_stat_proxy)
-            } else {
-                mBuilder?.setSmallIcon(R.drawable.ic_stat_direct)
-            }
+            // One icon always (the old proxy/direct icons were the previous logo).
+            mBuilder?.setSmallIcon(R.drawable.ic_notif_satra)
             mBuilder?.setStyle(NotificationCompat.BigTextStyle().bigText(contentText))
             mBuilder?.setContentText(contentText)
             getNotificationManager()?.notify(NOTIFICATION_ID, mBuilder?.build())
@@ -239,29 +269,13 @@ object NotificationManager {
         }
         val sinceLastQueryInSeconds = sinceLastQueryIn / 1000.0
 
-        var proxyUplink = 0L
-        var proxyDownlink = 0L
-        var directUplink = 0L
-        var directDownlink = 0L
-
-        CoreServiceManager.queryAllOutboundTrafficStats().forEach { stat ->
-            when {
-                stat.tag == AppConfig.TAG_DIRECT -> {
-                    when (stat.direction) {
-                        AppConfig.UPLINK -> directUplink += stat.value
-                        AppConfig.DOWNLINK -> directDownlink += stat.value
-                    }
-                }
-
-                // Accumulate stats for all proxy outbounds (including custom subscription tags)
-                stat.tag != AppConfig.TAG_BLOCKED -> {
-                    when (stat.direction) {
-                        AppConfig.UPLINK -> proxyUplink += stat.value
-                        AppConfig.DOWNLINK -> proxyDownlink += stat.value
-                    }
-                }
-            }
-        }
+        val now = UsageSampler.totals
+        val prev = lastTotals
+        lastTotals = now
+        val proxyUplink = now.proxyUp - prev.proxyUp
+        val proxyDownlink = now.proxyDown - prev.proxyDown
+        val directUplink = now.directUp - prev.directUp
+        val directDownlink = now.directDown - prev.directDown
 
         val proxyTotal = proxyUplink + proxyDownlink
         val directTotal = directUplink + directDownlink
@@ -293,3 +307,7 @@ object NotificationManager {
         return CoreServiceManager.serviceControl?.get()?.getService()
     }
 }
+
+/** Brand colours for notification accents: green while protected. */
+internal const val NOTIF_GREEN = 0xFF22C55E.toInt()
+internal const val NOTIF_ORANGE = 0xFFFF5E00.toInt()

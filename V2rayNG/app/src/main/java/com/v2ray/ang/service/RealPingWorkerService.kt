@@ -7,6 +7,8 @@ import com.v2ray.ang.dto.RealPingEvent
 import com.v2ray.ang.enums.EConfigType
 import com.v2ray.ang.extension.isComplexType
 import com.v2ray.ang.extension.isNotNullEmpty
+import com.v2ray.ang.handler.ExitIpProbe
+import com.v2ray.ang.handler.GeoIpResolver
 import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.handler.SettingsManager
 import com.v2ray.ang.handler.SpeedtestManager
@@ -66,6 +68,7 @@ class RealPingWorkerService(
                     if (scope.isActive) {
                         onEvent(RealPingEvent.Result(guid, result))
                     }
+                    // Ping tests never measure exit IPs: flags stay stable (see GeoIpResolver).
                 } catch (_: Throwable) {
                     // ignore
                 } finally {

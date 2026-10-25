@@ -268,80 +268,45 @@ internal fun UserAssetScreen(
     var deleteTarget by remember { mutableStateOf<AssetDeleteTarget?>(null) }
     val listState = rememberLazyListState()
 
-    Scaffold(
-        contentWindowInsets = WindowInsets(0),
-        topBar = {
-            AppTopBar(
-                title = stringResource(R.string.title_user_asset_setting),
-                onBackClick = onBackClick,
-                isLoading = isLoading,
-                actions = {
-                    Box(modifier = Modifier.wrapContentSize(Alignment.TopEnd)) {
-                        IconButton(onClick = { showAddMenu = true }) {
-                            Icon(painterResource(R.drawable.ic_add_24dp), contentDescription = stringResource(R.string.acc_add_asset))
-                        }
-                        DropdownMenu(
-                            expanded = showAddMenu,
-                            onDismissRequest = { showAddMenu = false },
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            offset = DpOffset(x = 0.dp, y = 0.dp),
-                            modifier = Modifier.wrapContentWidth(Alignment.End)
-                        ) {
-                            AppDropdownMenuItems(AddAssetMenuAction.entries, { it.labelRes }) { action ->
-                                showAddMenu = false
-                                when (action) {
-                                    AddAssetMenuAction.File -> onAddFileClick()
-                                    AddAssetMenuAction.Url -> onAddUrlClick()
-                                    AddAssetMenuAction.QRCode -> onAddQrcodeClick()
-                                }
-                            }
-                        }
-                    }
-                    IconButton(onClick = onDownloadClick) {
-                        Icon(painterResource(R.drawable.ic_cloud_download_24dp), contentDescription = stringResource(R.string.acc_download_file))
-                    }
+    com.v2ray.ang.ui.compose.satra.SatraLazyPage(
+        title = stringResource(R.string.title_user_asset_setting),
+        onBack = onBackClick,
+        isLoading = isLoading,
+        state = listState,
+        actions = {
+            com.v2ray.ang.ui.compose.satra.SatraIconButton(icon = com.v2ray.ang.ui.compose.satra.SatraIcons.Download, contentDescription = stringResource(R.string.acc_download_file), onClick = onDownloadClick, enabled = !isLoading)
+            Box {
+                com.v2ray.ang.ui.compose.satra.SatraIconButton(icon = com.v2ray.ang.ui.compose.satra.SatraIcons.Plus, contentDescription = stringResource(R.string.acc_add_asset), onClick = { showAddMenu = true })
+                com.v2ray.ang.ui.compose.satra.SatraMenu(expanded = showAddMenu, onDismiss = { showAddMenu = false }) {
+                    com.v2ray.ang.ui.compose.satra.SatraMenuItem(stringResource(R.string.menu_item_add_file), { showAddMenu = false; onAddFileClick() }, com.v2ray.ang.ui.compose.satra.SatraIcons.File)
+                    com.v2ray.ang.ui.compose.satra.SatraMenuItem(stringResource(R.string.menu_item_add_url), { showAddMenu = false; onAddUrlClick() }, com.v2ray.ang.ui.compose.satra.SatraIcons.Link)
+                    com.v2ray.ang.ui.compose.satra.SatraMenuItem(stringResource(R.string.menu_item_scan_qrcode), { showAddMenu = false; onAddQrcodeClick() }, com.v2ray.ang.ui.compose.satra.SatraIcons.Scan)
                 }
+            }
+        },
+    ) {
+        item(key = "geo_source") {
+            com.v2ray.ang.ui.compose.FormDropdownField(
+                label = stringResource(R.string.asset_geo_files_sources),
+                value = geoFilesSource,
+                options = geoFilesSourcesList,
+                onValueChange = onGeoSourceSelected,
             )
         }
-    ) { innerPadding ->
-        LazyColumn(
-            state = listState,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .verticalScrollbar(listState),
-            contentPadding = NavigationBarsBottomPadding()
-        ) {
-            item(key = "geo_source") {
-                SettingsListItem(
-                    title = stringResource(R.string.asset_geo_files_sources),
-                    entries = geoFilesSourcesList,
-                    values = geoFilesSourcesList,
-                    selectedValue = geoFilesSource,
-                    onSelected = { onGeoSourceSelected(it) }
-                )
-            }
-            item {
-                Text(
-                    text = stringResource(R.string.title_user_asset_setting),
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
-            itemsIndexed(items = uiState.assets, key = { _, item -> item.guid }) { _, item ->
+        item(key = "files_header") { com.v2ray.ang.ui.compose.satra.GroupHeader(stringResource(R.string.sx_assets_files)) }
+        val assets = uiState.assets
+        itemsIndexed(items = assets, key = { _, item -> item.guid }) { index, item ->
+            com.v2ray.ang.ui.compose.satra.LazyGroupRow(index, assets.size, separatorInset = 56.dp) {
                 UserAssetItem(
                     item = item,
                     fileMetadata = uiState.fileMetadata[item.guid],
                     onEdit = { onEditAsset(item.guid) },
-                    onDeleteClick = {
-                        deleteTarget = AssetDeleteTarget(item.guid, item.assetUrl.remarks)
-                    }
+                    onDeleteClick = { deleteTarget = AssetDeleteTarget(item.guid, item.assetUrl.remarks) }
                 )
-                ItemDivider()
             }
         }
+        item(key = "files_footer") { com.v2ray.ang.ui.compose.satra.GroupFooter(stringResource(R.string.sx_assets_footer)) }
     }
-
 
     deleteTarget?.let { asset ->
         DeleteConfirmDialog(
@@ -376,46 +341,16 @@ private fun UserAssetItem(
     }
     val showEditButton = item.assetUrl.locked != true && item.assetUrl.url != "file"
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .padding(8.dp)
-        ) {
-            Text(
-                text = item.assetUrl.remarks,
-                style = MaterialTheme.typography.bodyLarge,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = propertiesText,
-                style = MaterialTheme.typography.bodySmall,
-                maxLines = 1,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        if (showEditButton) {
-            IconButton(onClick = onEdit) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_edit_24dp),
-                    contentDescription = stringResource(R.string.acc_edit),
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-        }
-        IconButton(onClick = onDeleteClick) {
-            Icon(
-                painter = painterResource(R.drawable.ic_delete_24dp),
-                contentDescription = stringResource(R.string.acc_delete),
-                modifier = Modifier.size(24.dp)
-            )
-        }
-    }
+    val c = com.v2ray.ang.ui.compose.satra.Satra.colors
+    com.v2ray.ang.ui.compose.satra.SatraRow(
+        title = item.assetUrl.remarks,
+        subtitle = propertiesText,
+        icon = com.v2ray.ang.ui.compose.satra.SatraIcons.File,
+        iconColor = if (fileMetadata != null) c.info else c.warning,
+        onClick = if (showEditButton) onEdit else null,
+        trailing = {
+            com.v2ray.ang.ui.compose.satra.SatraIconButton(icon = com.v2ray.ang.ui.compose.satra.SatraIcons.Trash, contentDescription = stringResource(R.string.acc_delete), onClick = onDeleteClick, tint = c.danger)
+        },
+        chevron = showEditButton,
+    )
 }

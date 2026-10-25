@@ -6,91 +6,79 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.view.View
 import android.widget.RemoteViews
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.R
 import com.v2ray.ang.core.CoreServiceManager
 import com.v2ray.ang.core.LauncherManager
+import com.v2ray.ang.core.ToggleSurfaces
 
+/**
+ * Home-screen (and keyguard) widget: one tap connects/disconnects. Orange when off, green when on,
+ * with the config name and its real exit flag.
+ */
 class WidgetProvider : AppWidgetProvider() {
-    /**
-     * This method is called every time the widget is updated.
-     * It updates the widget background based on the V2Ray service running state.
-     *
-     * @param context The Context in which the receiver is running.
-     * @param appWidgetManager The AppWidgetManager instance.
-     * @param appWidgetIds The appWidgetIds for which an update is needed.
-     */
+
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
         super.onUpdate(context, appWidgetManager, appWidgetIds)
-        updateWidgetBackground(context, appWidgetManager, appWidgetIds, CoreServiceManager.isRunning())
+        render(context, appWidgetManager, appWidgetIds, CoreServiceManager.isRunning())
     }
 
-    /**
-     * Updates the widget background based on whether the V2Ray service is running.
-     *
-     * @param context The Context in which the receiver is running.
-     * @param appWidgetManager The AppWidgetManager instance.
-     * @param appWidgetIds The appWidgetIds for which an update is needed.
-     * @param isRunning Boolean indicating if the V2Ray service is running.
-     */
-    private fun updateWidgetBackground(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray, isRunning: Boolean) {
-        val remoteViews = RemoteViews(context.packageName, R.layout.widget_switch)
-        val intent = Intent(context, WidgetProvider::class.java)
-        intent.action = AppConfig.BROADCAST_ACTION_WIDGET_CLICK
-        val pendingIntent = PendingIntent.getBroadcast(
-            context,
-            R.id.layout_switch,
-            intent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-        remoteViews.setOnClickPendingIntent(R.id.layout_switch, pendingIntent)
-        if (isRunning) {
-            remoteViews.setInt(R.id.image_switch, "setImageResource", R.drawable.ic_stop_24dp)
-            remoteViews.setInt(R.id.layout_background, "setBackgroundResource", R.drawable.ic_rounded_corner_active)
-        } else {
-            remoteViews.setInt(R.id.image_switch, "setImageResource", R.drawable.ic_play_24dp)
-            remoteViews.setInt(R.id.layout_background, "setBackgroundResource", R.drawable.ic_rounded_corner_inactive)
-        }
-
-        for (appWidgetId in appWidgetIds) {
-            appWidgetManager.updateAppWidget(appWidgetId, remoteViews)
-        }
-    }
-
-    /**
-     * This method is called when the BroadcastReceiver is receiving an Intent broadcast.
-     * It handles widget click actions and updates the widget background based on the V2Ray service state.
-     *
-     * @param context The Context in which the receiver is running.
-     * @param intent The Intent being received.
-     */
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
-        if (AppConfig.BROADCAST_ACTION_WIDGET_CLICK == intent.action) {
-            if (CoreServiceManager.isRunning()) {
-                LauncherManager.stopService(context)
-            } else {
-                LauncherManager.startServiceFromToggle(context)
-            }
-        } else if (AppConfig.BROADCAST_ACTION_ACTIVITY == intent.action) {
-            AppWidgetManager.getInstance(context)?.let { manager ->
-                when (intent.getIntExtra("key", 0)) {
-                    AppConfig.MSG_STATE_RUNNING, AppConfig.MSG_STATE_START_SUCCESS -> {
-                        updateWidgetBackground(
-                            context, manager, manager.getAppWidgetIds(ComponentName(context, WidgetProvider::class.java)),
-                            true
-                        )
-                    }
-
-                    AppConfig.MSG_STATE_NOT_RUNNING, AppConfig.MSG_STATE_START_FAILURE, AppConfig.MSG_STATE_STOP_SUCCESS -> {
-                        updateWidgetBackground(
-                            context, manager, manager.getAppWidgetIds(ComponentName(context, WidgetProvider::class.java)),
-                            false
-                        )
-                    }
+        val manager = AppWidgetManager.getInstance(context) ?: return
+        val ids = manager.getAppWidgetIds(ComponentName(context, WidgetProvider::class.java))
+        when (intent.action) {
+            AppConfig.BROADCAST_ACTION_WIDGET_CLICK -> {
+                if (CoreServiceManager.isRunning()) {
+                    render(context, manager, ids, running = false, pending = true)
+                    LauncherManager.stopService(context)
+                } else {
+                    render(context, manager, ids, running = true, pending = true)
+                    if (!LauncherManager.startServiceFromToggle(context)) render(context, manager, ids, false)
                 }
             }
+            AppConfig.BROADCAST_ACTION_ACTIVITY -> when (intent.getIntExtra("key", 0)) {
+                AppConfig.MSG_STATE_RUNNING, AppConfig.MSG_STATE_START_SUCCESS -> render(context, manager, ids, true)
+                AppConfig.MSG_STATE_NOT_RUNNING, AppConfig.MSG_STATE_START_FAILURE, AppConfig.MSG_STATE_STOP_SUCCESS ->
+                    render(context, manager, ids, false)
+            }
+        }
+    }
+
+    companion object {
+        fun render(context: Context, manager: AppWidgetManager, ids: IntArray, running: Boolean, pending: Boolean = false) {
+            if (ids.isEmpty()) return
+            val views = RemoteViews(context.packageName, R.layout.widget_switch)
+            // VPN consent missing: the tap opens the app (only an activity can show the prompt).
+            val click = if (!running && ToggleSurfaces.needsVpnConsent(context)) {
+                ToggleSurfaces.openAppPendingIntent(context, R.id.layout_switch)
+            } else {
+                PendingIntent.getBroadcast(
+                    context, R.id.layout_switch,
+                    Intent(context, WidgetProvider::class.java).setAction(AppConfig.BROADCAST_ACTION_WIDGET_CLICK),
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+                )
+            }
+            views.setOnClickPendingIntent(R.id.layout_switch, click)
+            views.setInt(R.id.layout_background, "setBackgroundResource",
+                if (running) R.drawable.widget_bg_on else R.drawable.widget_bg_off)
+            views.setInt(R.id.image_switch, "setImageResource", if (running) R.drawable.ic_satra_logo_full_green else R.drawable.ic_satra_logo_full_orange)
+            val state = context.getString(
+                when {
+                    pending && running -> R.string.sx_toggle_connecting
+                    running -> R.string.sx_toggle_on
+                    else -> R.string.sx_toggle_tap_on
+                },
+            )
+            views.setTextViewText(R.id.text_state, state)
+            views.setTextViewText(R.id.text_name, ToggleSurfaces.selectedName(context))
+            val flag = ToggleSurfaces.selectedFlag()
+            views.setTextViewText(R.id.text_flag, flag)
+            views.setViewVisibility(R.id.text_flag, if (flag.isEmpty()) View.GONE else View.VISIBLE)
+            views.setContentDescription(R.id.layout_switch, "${context.getString(R.string.app_name)}: $state")
+            for (id in ids) manager.updateAppWidget(id, views)
         }
     }
 }

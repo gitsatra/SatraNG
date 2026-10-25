@@ -1,6 +1,9 @@
 package com.v2ray.ang.handler
 
 import com.v2ray.ang.AppConfig
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -45,8 +48,14 @@ object SettingsChangeManager {
     fun consumeRestartService(): Boolean =
         restartService.compareAndSet(true, false)
 
+    private val _dataChanges = MutableStateFlow(0L)
+
+    /** Ticks whenever servers or subscriptions changed in this process; UI lists observe it. */
+    val dataChanges: StateFlow<Long> = _dataChanges.asStateFlow()
+
     fun makeSetupGroupTab() {
         setupGroupTab.set(true)
+        _dataChanges.value = _dataChanges.value + 1
     }
 
     /**

@@ -1,11 +1,5 @@
 [
   {
-    "remarks": "Block udp443",
-    "outboundTag": "block",
-    "port": "443",
-    "network": "udp"
-  },
-  {
     "remarks": "Direct LAN IP",
     "outboundTag": "direct",
     "ip": [
@@ -17,6 +11,25 @@
     "outboundTag": "direct",
     "domain": [
       "geosite:private"
+    ]
+  },
+  {
+    "remarks": "Proxy Telegram",
+    "outboundTag": "proxy",
+    "ip": [
+      "geoip:telegram"
+    ]
+  },
+  {
+    "remarks": "Proxy Telegram domains",
+    "outboundTag": "proxy",
+    "domain": [
+      "geosite:telegram",
+      "domain:t.me",
+      "domain:telegram.org",
+      "domain:telegram.me",
+      "domain:tdesktop.com",
+      "domain:telegra.ph"
     ]
   },
   {

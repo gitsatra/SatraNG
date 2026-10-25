@@ -52,6 +52,24 @@ import com.v2ray.ang.ui.compose.ItemDivider
 import com.v2ray.ang.ui.compose.NavigationBarsBottomPadding
 import com.v2ray.ang.ui.compose.verticalScrollbar
 import com.v2ray.ang.util.Utils
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextOverflow
+import com.v2ray.ang.ui.compose.satra.AppIcon
+import com.v2ray.ang.ui.compose.satra.LazyGroupRow
+import com.v2ray.ang.ui.compose.satra.Satra
+import com.v2ray.ang.ui.compose.satra.SatraCheckCircle
+import com.v2ray.ang.ui.compose.satra.SatraEmptyState
+import com.v2ray.ang.ui.compose.satra.SatraIconButton
+import com.v2ray.ang.ui.compose.satra.SatraIcons
+import com.v2ray.ang.ui.compose.satra.SatraLazyPage
+import com.v2ray.ang.ui.compose.satra.SatraMenu
+import com.v2ray.ang.ui.compose.satra.SatraMenuItem
+import com.v2ray.ang.ui.compose.satra.SatraSegmented
+import com.v2ray.ang.ui.compose.satra.SatraSpace
+import com.v2ray.ang.ui.compose.satra.currentLocale
 
 private enum class PerAppMenuAction(@StringRes val labelRes: Int) {
     SelectAll(R.string.menu_item_select_all),
@@ -123,58 +141,33 @@ fun PerAppProxyScreen(
     onImportProxyApp: () -> Unit,
     onExportProxyApp: () -> Unit
 ) {
-    var showSearch by rememberSaveable { mutableStateOf(false) }
+    val c = Satra.colors
     var searchQuery by rememberSaveable { mutableStateOf("") }
     var showMenu by remember { mutableStateOf(false) }
-    var showInfoDialog by rememberSaveable { mutableStateOf(false) }
-    val onInfoClick = { showInfoDialog = true }
-    val listState = rememberLazyListState()
+    LaunchedEffect(Unit) { onSearch(searchQuery) }
 
-    LaunchedEffect(Unit) {
-        onSearch(searchQuery)
+    // 0 = every app uses the VPN, 1 = only the selected apps, 2 = all except the selected apps.
+    val mode = when {
+        !perAppProxyEnabled -> 0
+        bypassApps -> 2
+        else -> 1
     }
+    val selectedCount = apps.count { blacklist.contains(it.packageName) }
 
-    Scaffold(
-        contentWindowInsets = WindowInsets(0),
-        topBar = {
-            AppTopBar(
-                title = stringResource(R.string.per_app_proxy_settings),
-                onBackClick = onBackClick,
-                isLoading = isLoading,
-                isSearchActive = showSearch,
-                searchQuery = searchQuery,
-                onSearchQueryChange = { query ->
-                    searchQuery = query
-                    onSearch(query)
-                },
-                onSearchClose = {
-                    searchQuery = ""
-                    onSearch("")
-                    showSearch = false
-                },
-                searchPlaceholder = stringResource(R.string.menu_item_search),
-                actions = {
-                    if (!showSearch) {
-                        IconButton(onClick = { showSearch = true }) {
-                            Icon(
-                                painterResource(R.drawable.ic_search_24dp),
-                                contentDescription = stringResource(R.string.acc_search)
-                            )
-                        }
-                    }
-                    Box {
-                        IconButton(onClick = { showMenu = true }) {
-                            Icon(
-                                painterResource(R.drawable.ic_more_vert_24dp),
-                                contentDescription = stringResource(R.string.acc_more)
-                            )
-                        }
-                        DropdownMenu(
-                            expanded = showMenu,
-                            onDismissRequest = { showMenu = false },
-                            containerColor = MaterialTheme.colorScheme.surface
-                        ) {
-                            AppDropdownMenuItems(PerAppMenuAction.entries, { it.labelRes }) { action ->
+    SatraLazyPage(
+        title = stringResource(R.string.sx_set_split),
+        onBack = onBackClick,
+        isLoading = isLoading,
+        searchQuery = if (mode == 0) null else searchQuery,
+        onSearchChange = { searchQuery = it; onSearch(it) },
+        searchPlaceholder = stringResource(R.string.menu_item_search),
+        actions = {
+            if (mode != 0) {
+                Box {
+                    SatraIconButton(SatraIcons.More, stringResource(R.string.acc_more), onClick = { showMenu = true })
+                    SatraMenu(expanded = showMenu, onDismiss = { showMenu = false }) {
+                        PerAppMenuAction.entries.forEach { action ->
+                            SatraMenuItem(stringResource(action.labelRes), onClick = {
                                 showMenu = false
                                 when (action) {
                                     PerAppMenuAction.SelectAll -> onSelectAll()
@@ -183,109 +176,89 @@ fun PerAppProxyScreen(
                                     PerAppMenuAction.ImportSelection -> onImportProxyApp()
                                     PerAppMenuAction.ExportSelection -> onExportProxyApp()
                                 }
-                            }
+                            })
                         }
                     }
                 }
-            )
+            }
+        },
+    ) {
+        item(key = "mode") {
+            Column(Modifier.padding(horizontal = SatraSpace.Gutter)) {
+                SatraSegmented(
+                    options = listOf(
+                        stringResource(R.string.sx_split_all),
+                        stringResource(R.string.sx_split_only),
+                        stringResource(R.string.sx_split_except),
+                    ),
+                    selectedIndex = mode,
+                    onSelect = { i ->
+                        when (i) {
+                            0 -> onPerAppProxyChanged(false)
+                            1 -> { onBypassAppsChanged(false); onPerAppProxyChanged(true) }
+                            else -> { onBypassAppsChanged(true); onPerAppProxyChanged(true) }
+                        }
+                    },
+                )
+                Text(
+                    stringResource(
+                        when (mode) {
+                            0 -> R.string.sx_split_all_note
+                            1 -> R.string.sx_split_only_note
+                            else -> R.string.sx_split_except_note
+                        }
+                    ),
+                    style = Satra.type.footnote,
+                    color = c.textSecondary,
+                    modifier = Modifier.padding(horizontal = 16.dp).padding(top = 8.dp, bottom = 18.dp),
+                )
+            }
         }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.surface
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.per_app_proxy_settings_enable),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Switch(
-                            checked = perAppProxyEnabled,
-                            modifier = Modifier.scale(0.65f),
-                            onCheckedChange = onPerAppProxyChanged,
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = MaterialTheme.colorScheme.onSecondary,
-                                checkedTrackColor = MaterialTheme.colorScheme.secondary
-                            )
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.switch_bypass_apps_mode),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Switch(
-                            checked = bypassApps,
-                            modifier = Modifier.scale(0.65f),
-                            onCheckedChange = onBypassAppsChanged,
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = MaterialTheme.colorScheme.onSecondary,
-                                checkedTrackColor = MaterialTheme.colorScheme.secondary
-                            )
-                        )
-                    }
-                    IconButton(onClick = onInfoClick) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_about_24dp),
-                            contentDescription = stringResource(R.string.acc_per_app_proxy_information),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+        if (mode != 0) {
+            item(key = "count") {
+                Text(
+                    pluralStringResource(R.plurals.sx_split_selected, selectedCount, selectedCount).uppercase(currentLocale()),
+                    style = Satra.type.footnote.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Medium),
+                    color = c.textSecondary,
+                    modifier = Modifier.padding(horizontal = SatraSpace.Gutter + 16.dp).padding(bottom = 7.dp),
+                )
+            }
+            if (apps.isEmpty() && !isLoading) {
+                item(key = "empty") {
+                    SatraEmptyState(
+                        icon = SatraIcons.Search,
+                        title = stringResource(R.string.sx_split_none_title),
+                        message = stringResource(R.string.sx_split_none_msg),
+                    )
                 }
             }
-            AppDivider()
-
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScrollbar(listState),
-                contentPadding = NavigationBarsBottomPadding()
-            ) {
-                items(items = apps, key = { it.packageName }) { app ->
-                    val checked = blacklist.contains(app.packageName)
-                    AppListItem(
-                        appName = app.appName,
-                        packageName = app.packageName,
-                        icon = null,
-                        checked = checked,
-                        onCheckedChange = { onToggleApp(app.packageName) }
-                    )
-                    ItemDivider()
+            itemsIndexed(items = apps, key = { _, it -> it.packageName }) { index, app ->
+                val checked = blacklist.contains(app.packageName)
+                LazyGroupRow(index, apps.size, separatorInset = 64.dp) {
+                    SplitAppRow(app, checked) { onToggleApp(app.packageName) }
                 }
             }
         }
     }
+}
 
-    if (showInfoDialog) {
-        ConfirmDialog(
-            message = stringResource(R.string.summary_pref_per_app_proxy),
-            dismissText = null,
-            onConfirm = {},
-            onDismiss = { showInfoDialog = false },
-        )
+@Composable
+internal fun SplitAppRow(app: AppInfo, checked: Boolean, onToggle: () -> Unit) {
+    val c = Satra.colors
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .toggleable(value = checked, role = Role.Checkbox, onValueChange = { onToggle() })
+            .padding(horizontal = 14.dp, vertical = 9.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        AppIcon(app.packageName, size = 36.dp)
+        Spacer(Modifier.width(14.dp))
+        Column(Modifier.weight(1f)) {
+            Text(app.appName, style = Satra.type.body, color = c.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(app.packageName, style = Satra.type.caption, color = c.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        Spacer(Modifier.width(10.dp))
+        SatraCheckCircle(checked)
     }
 }

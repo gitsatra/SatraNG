@@ -1,0 +1,336 @@
+sx_notif_channel	Лимиты трафика
+sx_notif_limit_title	«%1$s» достиг лимита
+sx_notif_limit_body	Лимит «%1$s» на %2$s исчерпан. Доступ закрыт до следующего сброса, остальное продолжает работать.
+sx_notif_warn_title	«%1$s» почти достиг лимита
+sx_notif_warn_body	Использовано %1$s из %2$s (%3$s).
+sx_notif_global_title	Лимит трафика достигнут
+sx_notif_global_body	Вы израсходовали лимит %1$s на %2$s, поэтому VPN отключён.
+sx_period_today	сегодня
+sx_period_this_week	на этой неделе
+sx_period_this_month	в этом месяце
+sx_connect_timeout	Не удалось вовремя связаться с сервером.
+sx_add	Добавить
+sx_add_scan	Сканировать QR-код
+sx_add_clipboard	Вставить из буфера обмена
+sx_add_file	Импорт из файла
+sx_add_paste_short	Вставить
+sx_add_file_short	Из файла
+sx_add_subscription	Добавить подписку
+sx_home_empty_title	Давайте подключимся
+sx_home_empty_message	Добавьте ссылку на подписку или отсканируйте QR-код от провайдера. Остальное произойдёт автоматически.
+sx_state_idle	Не подключено
+sx_state_connecting	Подключение…
+sx_state_connected	Защищено
+sx_state_disconnecting	Отключение…
+sx_state_failed	Не удалось подключиться
+sx_hint_connect	Нажмите, чтобы подключиться
+sx_hint_cancel	Нажмите, чтобы отменить
+sx_hint_disconnect	Нажмите, чтобы отключиться
+sx_hint_wait	Секундочку…
+sx_hint_retry	Нажмите, чтобы повторить
+sx_home_choose_server	Выберите сервер
+sx_location_unknown	Расположение пока не определено
+sx_ping_test	Тест
+sx_ping_testing	Проверка
+sx_ping_failed	Нет ответа
+sx_ping_cd	Проверить задержку активного сервера
+sx_live_download	Загрузка
+sx_live_upload	Отдача
+sx_live_session	Эта сессия
+sx_home_today	Сегодня
+sx_home_see_usage	Трафик
+sx_quota_title	Подписка
+sx_quota_left	Осталось %1$s из %2$s
+sx_quota_unlimited	Безлимитный трафик
+sx_quota_expired	Срок истёк
+sx_quota_expires_today	Истекает сегодня
+sx_tab_home	Главная
+sx_tab_servers	Серверы
+sx_tab_subs	Подписки
+sx_tab_usage	Трафик
+sx_tab_more	Настройки
+sx_cancel	Отмена
+sx_delete	Удалить
+sx_deleted	Удалено
+sx_deleted_named	«%1$s» удалён
+sx_undo	Отменить
+sx_done	Готово
+sx_save	Сохранить
+sx_saved	Сохранено
+sx_search	Поиск
+sx_clear	Очистить
+sx_loading	Загрузка…
+sx_off	Выкл.
+sx_qr	QR-код
+sx_more_options	Дополнительно
+sx_group_default	По умолчанию
+sx_favorites	Избранное
+sx_language_system	Язык системы
+sx_unit_mb	МБ
+sx_unit_gb	ГБ
+sx_unit_h	ч
+sx_unit_m	мин
+sx_servers_title	Серверы
+sx_servers_test_all	Проверить все серверы
+sx_servers_stop_test	Остановить проверку
+sx_servers_empty_title	Серверов пока нет
+sx_servers_empty_msg	Вставьте ссылку на конфигурацию, отсканируйте QR-код или добавьте подписку.
+sx_servers_none_found	Ничего не найдено
+sx_servers_none_found_msg	Измените запрос или отключите фильтр избранного.
+sx_add_manual	Добавить вручную
+sx_add_manual_msg	Выберите протокол вашего сервера.
+sx_sort_default	Порядок по умолчанию
+sx_sort_ping	По скорости
+sx_sort_name	По названию
+sx_remove_duplicates	Удалить дубликаты
+sx_remove_duplicates_title	Удалить дубликаты серверов?
+sx_remove_invalid	Удалить неработающие серверы
+sx_remove_invalid_title	Удалить серверы, не прошедшие проверку?
+sx_remove_other_msg	Это действие нельзя отменить.
+sx_remove_all	Удалить все серверы
+sx_remove_all_title	Удалить все серверы из этого списка?
+sx_remove_all_msg	Все серверы из этого списка будут удалены. Это действие нельзя отменить.
+sx_server_use	Использовать этот сервер
+sx_server_favorite	В избранное
+sx_server_unfavorite	Убрать из избранного
+sx_server_recheck	Определить расположение заново
+sx_server_edit	Изменить
+sx_server_copy	Копировать ссылку
+sx_server_qr	Показать QR-код
+sx_server_copy_full	Копировать полную конфигурацию
+sx_subs_title	Подписки
+sx_subs_add	Добавить подписку
+sx_subs_edit	Изменить подписку
+sx_subs_update	Обновить сейчас
+sx_subs_update_all	Обновить все
+sx_subs_empty_title	Подписок нет
+sx_subs_empty_msg	Добавьте ссылку от провайдера. SatraNG будет сам обновлять серверы, трафик и срок действия.
+sx_subs_hint	Потяните вниз, чтобы обновить всё. Нажмите на подписку, чтобы изменить её.
+sx_subs_name	Название
+sx_subs_url	Ссылка на подписку
+sx_subs_err_name	Введите название.
+sx_subs_err_url	Введите корректную ссылку https.
+sx_subs_auto_update	Обновлять автоматически
+sx_subs_enabled	Включена
+sx_subs_auto_footer	Автообновление работает в фоне и обновляет серверы, трафик и срок действия.
+sx_subs_interval	Обновлять каждые
+sx_subs_auto	Авто
+sx_subs_never	Не обновлялась
+sx_subs_updated_ago	Обновлено %1$s
+sx_subs_used	Использовано %1$s
+sx_subs_support	Поддержка
+sx_subs_copy_link	Копировать ссылку
+sx_subs_show_qr	Показать QR-код
+sx_subs_advanced	Дополнительно…
+sx_subs_delete_title	Удалить «%1$s»?
+sx_subs_delete_msg	Подписка и все её серверы будут удалены.
+sx_subs_updated_all	Обновлено: %1$d, с ошибкой: %2$d
+sx_subs_failed	Не удалось обновить. Проверьте ссылку и подключение.
+sx_subs_nothing	Нечего обновлять
+sx_usage_title	Трафик
+sx_range_7	7 дней
+sx_range_30	30 дней
+sx_usage_total	Всего через VPN
+sx_usage_avg	В среднем за день
+sx_usage_connected	Подключено
+sx_usage_chart_data	Трафик по дням
+sx_usage_chart_hours	Часы подключения
+sx_usage_chart_empty	Данных пока нет. Подключитесь, и статистика появится здесь.
+sx_usage_apps	Приложения
+sx_usage_apps_empty	Нет данных по приложениям за этот период.
+sx_usage_apps_footer	Показан трафик приложений, пока VPN подключён, начиная с момента включения учёта. Нажмите на приложение, чтобы ограничить его.
+sx_usage_access_title	Разрешите доступ к статистике
+sx_usage_access_msg	Чтобы показывать трафик приложений, Android просит включить это один раз. SatraNG читает только объём сетевого трафика.
+sx_usage_access_open	Открыть настройки
+sx_usage_clear	Очистить историю трафика
+sx_usage_clear_title	Очистить историю трафика?
+sx_usage_clear_msg	Графики начнутся с нуля. Ваши лимиты сохранятся.
+sx_other_apps	Системные и прочие
+sx_limited	Ограничено
+sx_limits	Лимиты
+sx_limit_none	Лимитов пока нет
+sx_limit_none_msg	Ограничьте приложение или сайт. При достижении лимита блокируется только оно — всё остальное работает.
+sx_limit_add_app	Лимит для приложения
+sx_limit_add_site	Лимит для сайта
+sx_limit_global	Общий лимит трафика
+sx_limit_global_sub	Отключает VPN при достижении
+sx_limit_global_enable	Включить общий лимит
+sx_limit_used_of	%1$s из %2$s
+sx_limit_always_block	Всегда заблокировано
+sx_limit_blocked_until	Заблокировано до %1$s
+sx_limit_needs_engine	Нужен расширенный туннель
+sx_limit_edit_app_title	Лимит приложения
+sx_limit_edit_site_title	Лимит сайта
+sx_limit_choose_app	Выберите приложение
+sx_already_limited	Уже ограничено
+sx_limit_site_name	Название
+sx_limit_domains	Домены
+sx_limit_domains_support	Через запятую или с новой строки. Поддомены учитываются.
+sx_limit_domains_error	Введите хотя бы один корректный домен, например youtube.com.
+sx_limit_quick	Быстрый выбор
+sx_limit_amount	Объём
+sx_limit_period	Сброс
+sx_limit_reset_note	Счётчики сбрасываются в полночь по местному времени.
+sx_period_daily	Ежедневно
+sx_period_weekly	Еженедельно
+sx_period_monthly	Ежемесячно
+sx_limit_block_all	Блокировать полностью
+sx_limit_block_all_sub	Никакой трафик не разрешён
+sx_limit_android_old	Лимиты для приложений требуют Android 10 или новее. Лимиты для сайтов работают на любой версии.
+sx_preset_youtube	YouTube
+sx_preset_instagram	Instagram
+sx_preset_tiktok	TikTok
+sx_preset_netflix	Netflix
+sx_preset_telegram	Telegram
+sx_set_search	Поиск по настройкам
+sx_set_nothing	Ничего не найдено.
+sx_set_connection	Подключение
+sx_set_smart	Переподключаться автоматически
+sx_set_smart_sub	Если соединение оборвётся, SatraNG переподключится и при необходимости выберет самый быстрый сервер.
+sx_set_quick	Подключаться при запуске
+sx_set_quick_sub	Запускает VPN сразу после открытия SatraNG.
+sx_set_killswitch	Аварийное отключение
+sx_set_killswitch_sub	Включите «Постоянный VPN» и «Блокировать соединения без VPN» в настройках VPN Android.
+sx_set_mode	Режим
+sx_set_mode_sub	VPN охватывает весь телефон. Прокси — только приложения, которые вы направите на SatraNG.
+sx_set_mode_vpn	VPN
+sx_set_mode_proxy	Только прокси
+sx_set_mode_vpn_sub	Защищает весь телефон
+sx_set_mode_proxy_sub	Только приложения с локальным прокси
+sx_set_apps	Приложения и маршрутизация
+sx_set_split	Раздельное туннелирование
+sx_set_split_sub	Выберите, какие приложения используют VPN
+sx_set_routing	Маршрутизация
+sx_set_routing_sub	Открывать некоторые сайты напрямую, например иранские или российские
+sx_set_appearance	Оформление
+sx_set_theme	Тема
+sx_theme_system	Системная
+sx_theme_light	Светлая
+sx_theme_dark	Тёмная
+sx_set_language	Язык
+sx_set_speed_notif	Скорость в уведомлении
+sx_set_speed_notif_sub	Показывает текущую скорость загрузки и отдачи в уведомлении.
+sx_set_tools	Инструменты
+sx_set_log	Журнал подключения
+sx_set_log_sub	Посмотрите, что произошло, если что-то пошло не так
+sx_set_backup	Резервная копия
+sx_set_backup_sub	Сохранить или восстановить серверы и настройки
+sx_set_update	Проверить обновления
+sx_set_about	О приложении
+sx_set_advanced	Расширенные
+sx_set_show_advanced	Показывать расширенные настройки
+sx_set_advanced_footer	Значения по умолчанию подходят почти всем. Меняйте их, только если знаете зачем.
+sx_adv_tunnel	Туннель и DNS
+sx_adv_core	Ядро
+sx_adv_mux	Мультиплексирование
+sx_adv_fragment	Фрагментация
+sx_adv_observatory	Обсерватория
+sx_adv_more	Прочее
+sx_adv_assets	Гео-файлы (geoip / geosite)
+sx_limit_reset	Сбросить счётчик
+sx_limit_reset_sub	За этот период использовано %1$s. Счёт начнётся с нуля.
+sx_limit_delete_msg	Лимит и его счётчик будут удалены. Больше ничего не блокируется.
+sx_usage_apps_none_yet	Трафик приложений через VPN ещё не записан. Подключитесь — данные появятся в течение минуты.
+sx_locating_servers	Определяем расположение серверов…
+sx_geo_locating	Определяем расположение…
+sx_geo_failed	Расположение не найдено
+sx_geo_retry	Повторить
+sx_home_empty_add_msg	Скопируйте ссылку на подписку или конфигурацию от провайдера и нажмите «Добавить». Остальное SatraNG сделает сам.
+sx_add_more_ways	Другие способы
+sx_add_sheet_msg	Кнопка «Добавить» сама берёт данные из буфера обмена. Если ссылка в другом месте, выберите способ ниже.
+sx_add_subscription_sub	Ввести или изменить ссылку вручную
+sx_total	Всего
+sx_add_nothing	В буфере обмена нечего добавить. Сначала скопируйте ссылку или конфигурацию.
+sx_add_sub_fetching	Подписка найдена. Загружаем серверы…
+sx_add_sub_empty	Подписка добавлена, но серверы пока не загрузились. Потяните вниз во вкладке «Подписки», чтобы повторить.
+sx_add_sub_exists	Эта подписка уже добавлена — она обновлена.
+sx_smart_none	Ни один сервер не ответил. Проверьте подключение или обновите подписку.
+sx_smart_connect	Подключиться к самому быстрому
+sx_smart_connect_sub	Проверяет серверы и подключается к самому быстрому и стабильному.
+sx_smart_finding	Ищем самый быстрый сервер…
+sx_smart_chosen	Подключаемся к %1$s · %2$d мс
+sx_topup_mb	+%1$s МБ
+sx_topup_gb	+%1$s ГБ
+sx_notif_topup_hint	Нажмите на объём, чтобы сразу разрешить больше.
+sx_cat_social	Соцсети
+sx_cat_messaging	Мессенджеры
+sx_cat_video	Видео и музыка
+sx_cat_games	Игры
+sx_cat_browsers	Браузеры
+sx_cat_vpn	VPN и прокси
+sx_cat_shopping	Покупки
+sx_cat_productivity	Работа и продуктивность
+sx_cat_other	Другое
+sx_cat_system	Системные
+sx_show_system_apps	Показать системные приложения
+sx_cat_limit_all	Ограничить все
+sx_limit_edit_cat_title	Лимит категории
+sx_limit_cat_note	У всех приложений группы общий счётчик. Приложения со своим лимитом считаются отдельно.
+sx_speed_test	Тест скорости
+sx_speed_test_all	Тест скорости всех
+sx_speed_cancel	Остановить тест скорости
+sx_speed_testing	Проверяем скорость…
+sx_speed_failed	Тест скорости не удался
+sx_speed_all_started	Проверяем самые быстрые серверы по очереди (до 8 МБ на каждый)…
+sx_speed_test_sub	Скачивает до 8 МБ через этот сервер
+sx_sort_speed	Скорость
+sx_mbps	%1$s Мбит/с
+sx_badge_tunnel	Туннель
+sx_engine_applied	Переподключение, чтобы применить изменение
+sx_split_all	Все приложения
+sx_split_only	Только выбранные
+sx_split_except	Все, кроме
+sx_split_all_note	Все приложения на телефоне используют VPN.
+sx_split_only_note	VPN используют только отмеченные приложения. Остальные подключаются напрямую.
+sx_split_except_note	Отмеченные приложения подключаются напрямую. Остальные используют VPN.
+sx_split_none_title	Приложения не найдены
+sx_split_none_msg	Попробуйте другое название.
+sx_routing_title	Маршрутизация
+sx_routing_preset	Набор правил
+sx_routing_iran	Иран
+sx_routing_iran_note	Иранские сайты напрямую, остальное через VPN
+sx_routing_russia	Россия
+sx_routing_russia_note	Российские сайты напрямую, остальное через VPN
+sx_routing_custom_note	Используются ваши правила. Выберите набор, чтобы начать заново.
+sx_routing_rules	Правила
+sx_routing_rules_note	Правила проверяются сверху вниз. Удерживайте, чтобы переместить; нажмите, чтобы изменить.
+sx_routing_advanced	Дополнительно
+sx_routing_apply_title	Использовать набор «%1$s»?
+sx_routing_apply_msg	Текущие правила будут заменены. Закреплённые останутся.
+sx_routing_apply	Применить
+sx_routing_tag_direct	Напрямую
+sx_routing_tag_proxy	VPN
+sx_routing_tag_block	Блок
+sx_logs_title	Журнал
+sx_logs_empty_title	Записей нет
+sx_logs_empty_msg	Обновите, чтобы прочитать свежий журнал приложения и ядра. Удерживайте строку, чтобы скопировать её.
+sx_logs_copied	Строка скопирована
+sx_logs_clear	Очистить журнал
+sx_apps_none_found_msg	Нет приложений, подходящих под запрос.
+sx_tasker_title	Действие Tasker
+sx_tasker_pick	Конфигурация
+sx_tasker_default	Текущий выбор
+sx_chain_title	Цепочка прокси
+sx_chain_footer	Трафик идёт через эти конфигурации по порядку. Удерживайте номер, чтобы изменить порядок.
+sx_assets_files	Файлы
+sx_assets_footer	Geo-файлы определяют, какие сайты открываются напрямую. Загрузка обновляет их из источника выше.
+sx_chain_name	Название
+sx_chain_hop	Шаг %1$d
+sx_server_used	%1$s израсходовано
+sx_coach_pull_ping	Потяните вниз, чтобы проверить пинг всех конфигураций
+sx_dismiss	Закрыть
+sx_set_sub_on_open	Обновлять подписки при запуске
+sx_set_sub_on_open_sub	Также обновляются в фоне с интервалом каждой подписки
+sx_proxy_local	Локальный прокси
+sx_proxy_socks	SOCKS5
+sx_proxy_http	HTTP
+sx_proxy_mixed	SOCKS5 + HTTP
+sx_proxy_copied	Адрес скопирован
+sx_proxy_tap_copy	Укажите это в приложении, которое нужно направить. Нажмите, чтобы скопировать.
+sx_proxy_lan	Доступен и из вашей локальной сети
+sx_proxy_user	Пользователь: %1$s
+sx_mode_reconnect_title	Переподключиться для смены режима?
+sx_mode_reconnect_msg	Вы подключены. Переподключитесь сейчас, чтобы включить новый режим, или оставьте текущее соединение до следующего подключения.
+sx_mode_reconnect	Переподключить
+sx_later	Позже
+sx_reconnected	Переподключено

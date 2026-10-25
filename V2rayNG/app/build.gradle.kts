@@ -10,11 +10,12 @@ android {
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.v2ray.ang"
+        applicationId = "com.satra.ng"
         minSdk = 24
-        targetSdk = 37
-        versionCode = 751
-        versionName = "2.3.11"
+        // 35 = current stable Play target; 37 (canary) made sideload/Play Protect look more "unknown".
+        targetSdk = 35
+        versionCode = 775
+        versionName = "2.6.1"
 
         val abiFilterList = (properties["ABI_FILTERS"] as? String)?.split(';')
         splits {
@@ -24,27 +25,67 @@ android {
                 if (!abiFilterList.isNullOrEmpty()) {
                     include(*abiFilterList.toTypedArray())
                 } else {
-                    include(
-                        "arm64-v8a",
-                        "armeabi-v7a",
-                        "x86_64",
-                        "x86"
-                    )
+                    // Phones only need arm64; pass -PSATRA_ALL_ABIS=true for the other ABIs.
+                    if (properties["SATRA_ALL_ABIS"] == "true") include("arm64-v8a", "armeabi-v7a", "x86_64", "x86")
+                    else include("arm64-v8a")
                 }
-                isUniversalApk = abiFilterList.isNullOrEmpty()
+                // Optional universal APK: -PSATRA_UNIVERSAL=true
+                isUniversalApk = properties["SATRA_UNIVERSAL"] == "true"
             }
         }
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        create("satraRelease") {
+            // Release keystore and its password are never committed: they come from the untracked
+            // keystore/signing.properties (storePassword=..., keyAlias=..., keyPassword=...) or from
+            // env SATRA_STORE_PASSWORD / SATRA_KEY_ALIAS / SATRA_KEY_PASSWORD (CI secrets).
+            val keystoreFile = rootProject.file("keystore/satra-release.p12")
+            val signProps: Map<String, String> = rootProject.file("keystore/signing.properties")
+                .takeIf { it.exists() }?.readLines().orEmpty()
+                .mapNotNull { l -> l.split("=", limit = 2).takeIf { it.size == 2 && !l.trimStart().startsWith("#") }?.let { it[0].trim() to it[1].trim() } }
+                .toMap()
+            val storePw = signProps["storePassword"] ?: System.getenv("SATRA_STORE_PASSWORD")
+            if (keystoreFile.exists() && !storePw.isNullOrEmpty()) {
+                storeFile = keystoreFile
+                storePassword = storePw
+                keyAlias = signProps["keyAlias"] ?: System.getenv("SATRA_KEY_ALIAS") ?: "satrang"
+                keyPassword = signProps["keyPassword"] ?: System.getenv("SATRA_KEY_PASSWORD") ?: storePw
+                storeType = "PKCS12"
+                enableV1Signing = true
+                enableV2Signing = true
+                enableV3Signing = true
+            }
+        }
+    }
+
     buildTypes {
         release {
-            isMinifyEnabled = false
+            manifestPlaceholders["appLabel"] = "@string/app_name"
+            // R8 (full mode) shrink without renaming; see proguard-rules.pro for Gson/JNI keeps.
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            val satraSigning = signingConfigs.findByName("satraRelease")
+            if (satraSigning?.storeFile?.exists() == true && satraSigning.storePassword != null) {
+                signingConfig = satraSigning
+            }
+        }
+        debug {
+            // Side-by-side install with the user's production SatraNG: distinct id, label and data.
+            applicationIdSuffix = ".debug"
+            manifestPlaceholders["appLabel"] = "SatraNG Dev"
+            // Prefer the same release cert when available so Play Protect
+            // reputation is stable across installs (not a fresh debug cert each machine).
+            val satraSigning = signingConfigs.findByName("satraRelease")
+            if (satraSigning?.storeFile?.exists() == true && satraSigning.storePassword != null) {
+                signingConfig = satraSigning
+            }
         }
     }
 
@@ -92,7 +133,7 @@ android {
                 .map { it as com.android.build.gradle.internal.api.ApkVariantOutputImpl }
                 .forEach { output ->
                     val abi = output.getFilter("ABI") ?: "universal"
-                    output.outputFileName = "v2rayNG_${variant.versionName}-fdroid_${abi}.apk"
+                    output.outputFileName = "SatraNG_${variant.versionName}-fdroid_${abi}.apk"
                     if (versionCodes.containsKey(abi)) {
                         output.versionCodeOverride =
                             (100 * variant.versionCode + versionCodes[abi]!!).plus(5000000)
@@ -112,7 +153,7 @@ android {
                     else
                         "universal"
 
-                    output.outputFileName = "v2rayNG_${variant.versionName}_${abi}.apk"
+                    output.outputFileName = "SatraNG_${variant.versionName}_${abi}.apk"
                     if (versionCodes.containsKey(abi)) {
                         output.versionCodeOverride =
                             (1000000 * versionCodes[abi]!!).plus(variant.versionCode)
@@ -128,20 +169,15 @@ android {
         compose = true
     }
 
+    lint {
+        // SatraNG ships English (default), Persian and Russian only; the user asked to drop the other
+        // upstream locales. Legacy upstream strings that were never translated fall back to English.
+        disable += "MissingTranslation"
+    }
+
     androidResources {
         generateLocaleConfig = true
-        localeFilters += listOf(
-            "en",
-            "zh-rCN",
-            "zh-rTW",
-            "vi",
-            "ru",
-            "fa",
-            "ar",
-            "az",
-            "bn",
-            "bqi-rIR"
-        )
+        localeFilters += listOf("en", "fa", "ru")
     }
 
     packaging {
@@ -151,7 +187,12 @@ android {
     }
 
     testOptions {
+        unitTests.isIncludeAndroidResources = true
         unitTests.all {
+            it.systemProperty("robolectric.pixelCopyRenderMode", "hardware")
+            it.systemProperty("roborazzi.test.record", "true")
+            it.systemProperty("roborazzi.output.dir", rootProject.file("../preview/premium").absolutePath)
+            it.maxHeapSize = "3g"
             it.useJUnitPlatform()
             // Treat Jupiter discovery warnings as failures: JUnit 4 failed on an invalid @Test
             // method, such as one that returns a value, while Jupiter only warns and skips it.
@@ -169,6 +210,7 @@ dependencies {
 
     // AndroidX Core Libraries
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.splashscreen)
     implementation(libs.androidx.appcompat)
 
     // Compose Libraries
@@ -203,6 +245,7 @@ dependencies {
 
     // AndroidX Lifecycle and Architecture Components
     implementation(libs.lifecycle.viewmodel.ktx)
+    implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.lifecycle.runtime.ktx)
 
     // Background Task Libraries
@@ -220,5 +263,14 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     testImplementation(libs.mockito.core)
     testImplementation(libs.mockito.kotlin)
+    // Offscreen Compose screenshots (Robolectric native graphics + Roborazzi), test classpath only.
+    testImplementation(libs.junit4)
+    testRuntimeOnly(libs.junit.vintage.engine)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.roborazzi)
+    testImplementation(libs.roborazzi.compose)
+    testImplementation(platform(libs.androidx.compose.bom))
+    testImplementation(libs.androidx.compose.ui.test.junit4)
+    testImplementation(libs.androidx.compose.ui.test.manifest)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 }

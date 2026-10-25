@@ -23,34 +23,131 @@
         android:name="android.hardware.touchscreen"
         android:required="false" />
 
-    <!-- https://developer.android.com/about/versions/11/privacy/package-visibility -->
-    <uses-permission
-        android:name="android.permission.QUERY_ALL_PACKAGES"
-        tools:ignore="PackageVisibilityPolicy,QueryAllPackagesPermission" />
+    <!-- Package visibility without QUERY_ALL_PACKAGES (reduces Play Protect risk signals). -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="http" />
+        </intent>
+        <package android:name="cab.snapp.driver" />
+        <package android:name="cab.snapp.passenger" />
+        <package android:name="com.ada.mbank.mehr" />
+        <package android:name="com.aparat" />
+        <package android:name="com.asanpardakht.android" />
+        <package android:name="com.ba24.key" />
+        <package android:name="com.bankmaskan.mobilebank" />
+        <package android:name="com.bki.mobilebank" />
+        <package android:name="com.bmi.mobilebank" />
+        <package android:name="com.bpi.ng.mbank" />
+        <package android:name="com.bpm.sekeh" />
+        <package android:name="com.digikala" />
+        <package android:name="com.farsitel.bazaar" />
+        <package android:name="com.hamrahcard.app" />
+        <package android:name="com.isc.bsinew" />
+        <package android:name="com.kipaad.app" />
+        <package android:name="com.mydigipay.app.android" />
+        <package android:name="com.myirancell" />
+        <package android:name="com.namava.android" />
+        <package android:name="com.parsian.mobilebank" />
+        <package android:name="com.pmb.mobile" />
+        <package android:name="com.postbank.mobilebank" />
+        <package android:name="com.refahbank.dpi.android" />
+        <package android:name="com.rightel.myrightel" />
+        <package android:name="com.sabaidea.filimo" />
+        <package android:name="com.sadadpsp.eva" />
+        <package android:name="com.saderat.mobilebank" />
+        <package android:name="com.samanpr.blu" />
+        <package android:name="com.sepah.mobilebank" />
+        <package android:name="com.shahr.mobilebank" />
+        <package android:name="com.sheypoor.mobile" />
+        <package android:name="com.sina.mobilebank" />
+        <package android:name="com.tara360.app" />
+        <package android:name="com.telewebion" />
+        <package android:name="com.top.app" />
+        <package android:name="com.torob" />
+        <package android:name="com.tosantechno.mobilebank" />
+        <package android:name="ir.adliran.sana" />
+        <package android:name="ir.asanpardakht.android.ap" />
+        <package android:name="ir.ayandeh.mobilebank" />
+        <package android:name="ir.balad" />
+        <package android:name="ir.bankmaskan.mobilebank" />
+        <package android:name="ir.basalam.app" />
+        <package android:name="ir.bki.mobilebank" />
+        <package android:name="ir.bmi.bam.nativeweb" />
+        <package android:name="ir.bpi.mobilebank" />
+        <package android:name="ir.divar" />
+        <package android:name="ir.eitaa.messenger" />
+        <package android:name="ir.enbank.mobilebank" />
+        <package android:name="ir.filimo" />
+        <package android:name="ir.ghesta.app" />
+        <package android:name="ir.hamrahcard.app" />
+        <package android:name="ir.ilmili.telegraph" />
+        <package android:name="ir.irancell.myirancell" />
+        <package android:name="ir.mci.ecareapp" />
+        <package android:name="ir.mservices.market" />
+        <package android:name="ir.mygov.app" />
+        <package android:name="ir.nasim" />
+        <package android:name="ir.okala.app" />
+        <package android:name="ir.parsian.mobilebank" />
+        <package android:name="ir.postbank.mobilebank" />
+        <package android:name="ir.refahbank.mobilebank" />
+        <package android:name="ir.resaneh1.iptv" />
+        <package android:name="ir.rightel.app" />
+        <package android:name="ir.sabtahval.app" />
+        <package android:name="ir.saderat.mobilebank" />
+        <package android:name="ir.sb24.blu" />
+        <package android:name="ir.sep.sepino" />
+        <package android:name="ir.shahr_bank.mobilebank" />
+        <package android:name="ir.shaparak.app" />
+        <package android:name="ir.sinabank.mobilebank" />
+        <package android:name="ir.snappfood" />
+        <package android:name="ir.tara.app" />
+        <package android:name="ir.tax.app" />
+        <package android:name="ir.tejaratbank.tata.mobile.android.tejarat" />
+        <package android:name="ir.top.app" />
+        <package android:name="mob.banking.android" />
+        <package android:name="mobi.mmdt.ottplus" />
+        <package android:name="net.telewebion" />
+        <package android:name="org.rajman.neshan.traffic.tehran" />
+        <package android:name="taxi.tap30.driver" />
+        <package android:name="taxi.tap30.passenger" />
+    </queries>
+
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"
         tools:ignore="ForegroundServicesPolicy" />
     <uses-permission
         android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"
         android:minSdkVersion="34" />
-    <!-- <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" /> -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
 
     <application
         android:name=".AngApplication"
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:banner="@mipmap/ic_banner"
         android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name"
+        android:label="${appLabel}"
         android:networkSecurityConfig="@xml/network_security_config"
         android:supportsRtl="true"
         android:theme="@style/AppThemeDayNight.NoActionBar"
-        android:usesCleartextTraffic="true">
+        android:usesCleartextTraffic="false">
 
         <service
             android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
@@ -64,7 +161,8 @@
         <activity
             android:name=".ui.main.MainActivity"
             android:exported="true"
-            android:launchMode="singleTask">
+            android:launchMode="singleTask"
+            android:theme="@style/Theme.Satra.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -75,9 +173,7 @@
                 <action android:name="android.service.quicksettings.action.QS_TILE_PREFERENCES" />
             </intent-filter>
 
-            <meta-data
-                android:name="android.app.shortcuts"
-                android:resource="@xml/shortcuts" />
+
         </activity>
         <activity
             android:name=".ui.server.ServerVmessActivity"
@@ -145,9 +241,7 @@
             android:name=".ui.routing.RoutingEditActivity"
             android:windowSoftInputMode="stateUnchanged|adjustResize"
             android:exported="false" />
-        <activity
-            android:name=".ui.subscription.SubSettingActivity"
-            android:exported="false" />
+        
         <activity
             android:name=".ui.userasset.UserAssetActivity"
             android:exported="false" />
@@ -206,6 +300,9 @@
             android:exported="false" />
         <activity
             android:name=".ui.backup.BackupActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.notification.NotificationControlActivity"
             android:exported="false" />
         <activity
             android:name=".ui.AboutActivity"
@@ -299,12 +396,19 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>
+        <receiver
+            android:name=".handler.UsageNotifier$ActionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.v2ray.ang.action.USAGE_LIMIT" />
+            </intent-filter>
+        </receiver>
 
         <service
             android:name=".service.QSTileService"
             android:exported="true"
             android:foregroundServiceType="specialUse"
-            android:icon="@drawable/ic_stat_name"
+            android:icon="@drawable/ic_notif_satra"
             android:label="@string/app_tile_name"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
             android:process=":daemon">
@@ -314,7 +418,19 @@
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="tile" />
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="true" />
         </service>
+        <activity
+            android:name=".ui.security.SecurityCheckActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.hotspot.HotspotShareActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.geo.GeoUpdatesActivity"
+            android:exported="false" />
         <!-- =====================Tasker===================== -->
         <activity
             android:name=".ui.shortcut.TaskerActivity"

@@ -69,6 +69,36 @@ internal object ProfileReplacement {
         }
     }
 
+    /** What makes two profiles "the same config" across a subscription update (names may change). */
+    internal fun endpointKey(p: ProfileItem): String = listOf(
+        p.configType.name, p.server, p.serverPort, p.password, p.method, p.network, p.headerType,
+        p.host, p.path, p.mode, p.serviceName, p.authority, p.security, p.sni, p.publicKey, p.shortId,
+    ).joinToString("|") { it?.trim()?.lowercase().orEmpty() }
+
+    /**
+     * Maps each new profile key to the guid of the old profile it replaces, so a refresh keeps the
+     * guid (and with it the measured exit country, favourite, speed and usage). Exact matches
+     * (same endpoint and same name) win, then same endpoint alone; every old guid is used once.
+     */
+    fun matchExisting(newProfiles: Map<String, ProfileItem>, old: Map<String, ProfileItem>): Map<String, String> {
+        val result = linkedMapOf<String, String>()
+        val used = hashSetOf<String>()
+        val oldByEndpoint = old.entries.groupBy { endpointKey(it.value) }
+        fun pass(sameName: Boolean) {
+            for ((newKey, np) in newProfiles) {
+                if (newKey in result) continue
+                val match = oldByEndpoint[endpointKey(np)].orEmpty().firstOrNull { (g, op) ->
+                    g !in used && (!sameName || op.remarks.trim() == np.remarks.trim())
+                } ?: continue
+                result[newKey] = match.key
+                used += match.key
+            }
+        }
+        pass(sameName = true)
+        pass(sameName = false)
+        return result
+    }
+
     private fun isSameText(left: String?, right: String?): Boolean {
         if (left.isNullOrBlank() || right.isNullOrBlank()) return false
         return left.trim().equals(right.trim(), ignoreCase = true)

@@ -1,0 +1,35 @@
+sx_add	Add	افزودن
+sx_add_scan	Scan QR code	اسکن کد QR
+sx_add_clipboard	Paste from clipboard	چسباندن از کلیپ‌بورد
+sx_add_file	Import from file	وارد کردن از فایل
+sx_add_paste_short	Paste	چسباندن
+sx_add_file_short	Import file	وارد کردن فایل
+sx_add_subscription	Add subscription	افزودن اشتراک
+sx_home_empty_title	Let's get you connected	بیایید متصل‌تان کنیم
+sx_home_empty_message	Add a subscription link or scan a QR code from your provider. Everything else is automatic.	لینک اشتراک را اضافه کنید یا کد QR ارائه‌دهنده را اسکن کنید. بقیه‌اش خودکار است.
+sx_state_idle	Not connected	متصل نیستید
+sx_state_connecting	Connecting…	در حال اتصال…
+sx_state_connected	Protected	محافظت‌شده
+sx_state_disconnecting	Disconnecting…	در حال قطع اتصال…
+sx_state_failed	Couldn't connect	اتصال برقرار نشد
+sx_hint_connect	Tap to connect	برای اتصال بزنید
+sx_hint_cancel	Tap to cancel	برای لغو بزنید
+sx_hint_disconnect	Tap to disconnect	برای قطع اتصال بزنید
+sx_hint_wait	One moment…	چند لحظه…
+sx_hint_retry	Tap to try again	برای تلاش دوباره بزنید
+sx_home_choose_server	Choose a server	یک سرور انتخاب کنید
+sx_location_unknown	Location not detected yet	موقعیت هنوز مشخص نشده
+sx_ping_test	Test	تست
+sx_ping_testing	Testing	در حال تست
+sx_ping_failed	No reply	بی‌پاسخ
+sx_ping_cd	Test latency of the active server	تست تأخیر سرور فعال
+sx_live_download	Download	دانلود
+sx_live_upload	Upload	آپلود
+sx_live_session	This session	این نشست
+sx_home_today	Today	امروز
+sx_home_see_usage	Usage	مصرف
+sx_quota_title	Subscription	اشتراک
+sx_quota_left	%1$s left of %2$s	%1$s از %2$s باقی‌مانده
+sx_quota_unlimited	Unlimited data	حجم نامحدود
+sx_quota_expired	Expired	منقضی شده
+sx_quota_expires_today	Expires today	امروز منقضی می‌شود

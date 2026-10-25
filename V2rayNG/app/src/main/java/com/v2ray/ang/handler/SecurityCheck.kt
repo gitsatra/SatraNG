@@ -149,7 +149,7 @@ object SecurityCheck {
         val port = SettingsManager.getHttpPort()
         val user = SettingsManager.getSocksUsername()
         val pass = SettingsManager.getSocksPassword()
-        for (url in listOf(AppConfig.IP_API_URL, "http://ip-api.com/json/?fields=countryCode,query", "https://api.ip.sb/geoip")) {
+        for (url in listOf(AppConfig.IP_API_URL, "http://ip-api.com/json/?fields=countryCode,query,lat,lon", "https://api.ip.sb/geoip")) {
             val body = try {
                 HttpUtil.getUrlContent(UrlContentRequest(url = url, timeout = 8000, httpPort = port, proxyUsername = user, proxyPassword = pass))
             } catch (e: Exception) {
@@ -157,7 +157,7 @@ object SecurityCheck {
             }
             val r = parseIpCountry(body)
             val ip = r?.first
-            if (!ip.isNullOrBlank()) return ip to r.second
+            if (!ip.isNullOrBlank()) { lastExitLatLon = parseLatLon(body); return ip to r.second }
         }
         return null
     }
@@ -225,6 +225,16 @@ object SecurityCheck {
     const val PREF_LOCKDOWN = "pref_satra_vpn_lockdown"
 
     /** (ip, 2-letter country) from api.ip.sb / ip-api.com style JSON. */
+    /** (lat, lon) of the last [liveExit] answer, when the service reports it (ip.sb, ip-api). */
+    @Volatile var lastExitLatLon: Pair<Double, Double>? = null
+
+    internal fun parseLatLon(body: String?): Pair<Double, Double>? = try {
+        val o = JsonParser.parseString(body).asJsonObject
+        fun d(vararg k: String) = k.firstNotNullOfOrNull { o.get(it)?.takeIf { e -> e.isJsonPrimitive }?.asString?.toDoubleOrNull() }
+        val la = d("latitude", "lat"); val lo = d("longitude", "lon")
+        if (la != null && lo != null && la in -90.0..90.0 && lo in -180.0..180.0) la to lo else null
+    } catch (e: Exception) { null }
+
     internal fun parseIpCountry(body: String?): Pair<String, String?>? {
         if (body.isNullOrBlank()) return null
         return try {

@@ -173,6 +173,14 @@ fun HomeScreen(
                 // Title + chips + server card + summary strip + margins; the orb takes what is left.
                 val fixed = (64 + 40 + 76 + 64 + 36 + 62 + (if (smartTip) 46 else 0)) * fontScale
                 val orb = (maxHeight.value - fixed).coerceIn(112f, 264f).dp
+                val connected = state.phase == ConnectPhase.Connected && live.sessionStartMs > 0L
+                val exitPoint = ExitLocation.point.value
+                val mapPoint = when {
+                    !connected -> null
+                    exitPoint != null && ExitLocation.sessionStartMs == live.sessionStartMs -> exitPoint
+                    else -> null
+                }
+                WorldMapBackdrop(mapPoint, Modifier.fillMaxSize())
                 Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
                     Spacer(Modifier.weight(1f))
                     OrbSection(state = state, live = live, onToggle = onToggle, orbSize = orb)

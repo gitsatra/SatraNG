@@ -83,6 +83,8 @@ internal fun ExitIpChip(sessionStartMs: Long) {
                 ExitIpChipCache.sessionStartMs = sessionStartMs
                 ExitIpChipCache.exit = r
                 exit = r
+                val ll = SecurityCheck.lastExitLatLon
+                ExitLocation.set(sessionStartMs, ll?.first, ll?.second, r.second)
             }
             attempt++
         }

@@ -139,6 +139,8 @@ sx_preset_telegram	Telegram	تلگرام
 sx_set_search	Search settings	جستجو در تنظیمات
 sx_set_nothing	No settings match your search.	تنظیماتی مطابق جستجوی شما نیست.
 sx_set_connection	Connection	اتصال
+sx_set_autosel	Pick the best server on connect	انتخاب خودکار بهترین سرور
+sx_set_autosel_sub	On: Connect picks the fastest working server. Off: Connect always uses the server you selected.	روشن: هنگام اتصال سریع‌ترین سرور سالم انتخاب می‌شود. خاموش: همیشه به سروری که خودتان انتخاب کرده‌اید وصل می‌شود.
 sx_set_smart	Reconnect automatically	اتصال دوبارهٔ خودکار
 sx_set_smart_sub	If the connection drops, SatraNG reconnects, switching to the fastest server when needed.	اگر اتصال قطع شود، SatraNG دوباره وصل می‌شود و در صورت نیاز به سریع‌ترین سرور می‌رود.
 sx_set_quick	Connect when the app opens	اتصال هنگام باز کردن برنامه

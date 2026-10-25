@@ -561,6 +561,7 @@ object SettingsManager {
         ensureDefaultBool(AppConfig.PREF_MUX_ENABLED, false)
         ensureDefaultBool(AppConfig.PREF_PROXY_SHARING, false)
         ensureDefaultBool(AppConfig.PREF_AUTO_CONNECT, true)
+        ensureDefaultBool(AppConfig.PREF_AUTO_SELECT, true)
         ensureDefaultBool(AppConfig.PREF_USER_REQUESTED_STOP, false)
         MmkvManager.encodeSettings(AppConfig.PREF_SATRA_TUNNEL_DEFAULTS_SEEDED, true)
     }

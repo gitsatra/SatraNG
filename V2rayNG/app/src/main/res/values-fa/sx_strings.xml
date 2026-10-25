@@ -193,6 +193,8 @@
     <string name="sx_set_search">جستجو در تنظیمات</string>
     <string name="sx_set_nothing">تنظیماتی مطابق جستجوی شما نیست.</string>
     <string name="sx_set_connection">اتصال</string>
+    <string name="sx_set_autosel">انتخاب خودکار بهترین سرور</string>
+    <string name="sx_set_autosel_sub">روشن: هنگام اتصال سریع‌ترین سرور سالم انتخاب می‌شود. خاموش: همیشه به سروری که خودتان انتخاب کرده‌اید وصل می‌شود.</string>
     <string name="sx_set_smart">اتصال دوبارهٔ خودکار</string>
     <string name="sx_set_smart_sub">اگر اتصال قطع شود، SatraNG دوباره وصل می‌شود و در صورت نیاز به سریع‌ترین سرور می‌رود.</string>
     <string name="sx_set_quick">اتصال هنگام باز کردن برنامه</string>

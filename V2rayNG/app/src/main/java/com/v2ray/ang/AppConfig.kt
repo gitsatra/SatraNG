@@ -95,6 +95,8 @@ object AppConfig {
     const val PREF_REAL_PING_CONCURRENCY = "pref_real_ping_concurrency"
     /** Auto-select best config and reconnect after unexpected drop. Default ON. */
     const val PREF_AUTO_CONNECT = "pref_auto_connect"
+    /** Pick the fastest working config when Connect is tapped. OFF = use exactly the selected config. Default ON. */
+    const val PREF_AUTO_SELECT = "pref_auto_select"
     /** Start the VPN as soon as the app is opened. */
     const val PREF_QUICK_CONNECT = "pref_quick_connect"
     /** Show the advanced settings entries on the Settings tab. */

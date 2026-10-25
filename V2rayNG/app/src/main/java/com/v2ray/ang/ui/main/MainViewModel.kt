@@ -1681,7 +1681,14 @@ class MainViewModel(
 
     private var lastManualPickMs = 0L
 
+    fun isAutoSelectEnabled(): Boolean =
+        MmkvManager.decodeSettingsBool(AppConfig.PREF_AUTO_SELECT, true)
+
     fun prepareConnectGuid(): String? {
+        if (!isAutoSelectEnabled()) {
+            android.util.Log.i("SatraConnect", "auto-select OFF, using selected ${uiState.value.selectedGuid}")
+            return uiState.value.selectedGuid
+        }
         if (honorManualPick(lastManualPickMs, System.currentTimeMillis())) return uiState.value.selectedGuid
         val groupId = uiState.value.selectedGroupId
         val candidates = if (groupId.isNotBlank()) {
@@ -1710,6 +1717,7 @@ class MainViewModel(
             selectedGuid = uiState.value.selectedGuid,
             autoConnect = isAutoConnectEnabled(),
         )
+        android.util.Log.i("SatraConnect", "auto-select ON, selected=${uiState.value.selectedGuid} best=$best")
         if (best != null && best != uiState.value.selectedGuid) {
             updateSelectedGuid(best)
         }

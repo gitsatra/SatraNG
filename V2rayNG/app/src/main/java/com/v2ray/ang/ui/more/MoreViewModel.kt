@@ -19,6 +19,7 @@ data class MoreUiState(
     val vpnMode: Boolean = true,
     val speedNotification: Boolean = false,
     val smartConnect: Boolean = true,
+    val autoSelect: Boolean = true,
     val quickConnect: Boolean = false,
     val showAdvanced: Boolean = false,
     val subUpdateOnOpen: Boolean = true,
@@ -31,6 +32,7 @@ interface MoreActions {
     fun setVpnMode(vpn: Boolean)
     fun setSpeedNotification(on: Boolean)
     fun setSmartConnect(on: Boolean)
+    fun setAutoSelect(on: Boolean)
     fun setQuickConnect(on: Boolean)
     fun setShowAdvanced(on: Boolean)
     fun setSubUpdateOnOpen(on: Boolean) = Unit
@@ -46,6 +48,7 @@ class MoreViewModel(app: Application) : AndroidViewModel(app), MoreActions {
         vpnMode = (MmkvManager.decodeSettingsString(AppConfig.PREF_MODE, AppConfig.VPN) ?: AppConfig.VPN) == AppConfig.VPN,
         speedNotification = MmkvManager.decodeSettingsBool(AppConfig.PREF_SPEED_ENABLED, false),
         smartConnect = MmkvManager.decodeSettingsBool(AppConfig.PREF_AUTO_CONNECT, true),
+        autoSelect = MmkvManager.decodeSettingsBool(AppConfig.PREF_AUTO_SELECT, true),
         quickConnect = MmkvManager.decodeSettingsBool(AppConfig.PREF_QUICK_CONNECT, false),
         showAdvanced = MmkvManager.decodeSettingsBool(AppConfig.PREF_SHOW_ADVANCED, false),
         subUpdateOnOpen = MmkvManager.decodeSettingsBool(AppConfig.PREF_SATRA_SUB_UPDATE_ON_OPEN, true),
@@ -78,6 +81,11 @@ class MoreViewModel(app: Application) : AndroidViewModel(app), MoreActions {
     override fun setSubUpdateOnOpen(on: Boolean) {
         MmkvManager.encodeSettings(AppConfig.PREF_SATRA_SUB_UPDATE_ON_OPEN, on)
         _state.update { it.copy(subUpdateOnOpen = on) }
+    }
+
+    override fun setAutoSelect(on: Boolean) {
+        MmkvManager.encodeSettings(AppConfig.PREF_AUTO_SELECT, on)
+        _state.update { it.copy(autoSelect = on) }
     }
 
     override fun setSmartConnect(on: Boolean) {

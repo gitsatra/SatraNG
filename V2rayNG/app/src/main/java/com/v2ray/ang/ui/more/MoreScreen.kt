@@ -100,6 +100,9 @@ fun MoreContent(
             Section(
                 stringResource(R.string.sx_set_connection), null,
                 listOfNotNull(
+                    spec(stringResource(R.string.sx_set_autosel), stringResource(R.string.sx_set_autosel_sub), "auto select fastest best server connect") {
+                        row { SatraSwitchRow(stringResource(R.string.sx_set_autosel), s.autoSelect, vm::setAutoSelect, subtitle = stringResource(R.string.sx_set_autosel_sub), icon = SatraIcons.Bolt, iconColor = c.accent) }
+                    },
                     spec(stringResource(R.string.sx_set_smart), stringResource(R.string.sx_set_smart_sub), "auto fastest reconnect best") {
                         row { SatraSwitchRow(stringResource(R.string.sx_set_smart), s.smartConnect, vm::setSmartConnect, subtitle = stringResource(R.string.sx_set_smart_sub), icon = SatraIcons.Bolt, iconColor = c.accent) }
                     },

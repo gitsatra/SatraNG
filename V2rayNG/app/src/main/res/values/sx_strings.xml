@@ -193,6 +193,8 @@
     <string name="sx_set_search">Search settings</string>
     <string name="sx_set_nothing">No settings match your search.</string>
     <string name="sx_set_connection">Connection</string>
+    <string name="sx_set_autosel">Pick the best server on connect</string>
+    <string name="sx_set_autosel_sub">On: Connect picks the fastest working server. Off: Connect always uses the server you selected.</string>
     <string name="sx_set_smart">Reconnect automatically</string>
     <string name="sx_set_smart_sub">If the connection drops, SatraNG reconnects, switching to the fastest server when needed.</string>
     <string name="sx_set_quick">Connect when the app opens</string>

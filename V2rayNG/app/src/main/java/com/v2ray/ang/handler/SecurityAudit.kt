@@ -102,6 +102,7 @@ object SecurityAudit {
             return r.body.string()
         }
     }
+    fun tunnelGet(url: String): String? = runCatching { get(url) }.getOrNull()
     private fun tryGet(url: String, direct: Boolean = false) = runCatching { get(url, direct) }.getOrNull()
 
     /** Runs every check in order; [emit] is called on the caller's thread as each one finishes. IO thread. */

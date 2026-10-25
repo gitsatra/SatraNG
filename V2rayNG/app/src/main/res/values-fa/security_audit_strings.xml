@@ -128,4 +128,6 @@
     <string name="sa_tor_cache_bad">فهرست ذخیره‌شده قدیمی است و در بررسی بعدی به‌روز می‌شود.</string>
     <string name="sa_tor_cache_fix">در حالت متصل دوباره بررسی کنید.</string>
     <string name="sa_tor_cache_how">سن فهرستی که از check.torproject.org/torbulkexitlist ذخیره شده (روزانه، فقط هنگام بررسی و از تونل به‌روز می‌شود).</string>
+    <string name="sa_tor_badge">خروجی یک گره Tor است</string>
+    <string name="sa_tor_check">اجرای بررسی‌های Tor</string>
 </resources>

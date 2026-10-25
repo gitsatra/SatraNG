@@ -45,6 +45,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.v2ray.ang.R
@@ -88,15 +90,16 @@ internal fun ModeBar(current: Mode, onPick: (Mode) -> Unit, modifier: Modifier =
             .padding(start = 14.dp, end = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.size(34.dp).clip(CircleShape).background(if (on) c.accent.copy(alpha = 0.16f) else c.fill), contentAlignment = Alignment.Center) {
-            Icon(modeIcon(current), null, tint = if (on) c.accent else c.textSecondary, modifier = Modifier.size(18.dp))
+        val mc = modeColor(current)
+        Box(Modifier.size(34.dp).clip(CircleShape).background(mc.copy(alpha = 0.16f)), contentAlignment = Alignment.Center) {
+            Text(modeEmoji(current), fontSize = 17.sp)
         }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(stringResource(R.string.mode_title), style = Satra.type.caption, color = c.textTertiary)
             Text(
                 if (on) stringResource(R.string.mode_on, stringResource(current.title)) else stringResource(current.title),
-                style = Satra.type.subhead.copy(fontWeight = FontWeight.SemiBold), color = if (on) c.accent else c.textPrimary,
+                style = Satra.type.subhead.copy(fontWeight = FontWeight.SemiBold), color = if (on) mc else c.textPrimary,
                 maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
         }
@@ -122,6 +125,8 @@ internal fun ModeBar(current: Mode, onPick: (Mode) -> Unit, modifier: Modifier =
 private fun ModeSheet(current: Mode, onDismiss: () -> Unit, onApply: (Mode) -> Unit) {
     val c = Satra.colors
     var sel by remember { mutableStateOf(current) }
+    var info by remember { mutableStateOf<Mode?>(null) }
+    info?.let { ModeInfoDialog(it) { info = null } }
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss, properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
         Column(
             Modifier.padding(16.dp).fillMaxWidth().clip(SatraShapes.XLarge).background(c.surfaceRaised).padding(18.dp),
@@ -134,21 +139,29 @@ private fun ModeSheet(current: Mode, onDismiss: () -> Unit, onApply: (Mode) -> U
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     pair.forEach { m ->
                         val isSel = m == sel
-                        val bg by animateColorAsState(if (isSel) c.accent.copy(alpha = 0.14f) else c.fill, tween(200), label = "tile")
+                        val mc = modeColor(m)
+                        val bg by animateColorAsState(if (isSel) mc.copy(alpha = 0.14f) else c.fill, tween(200), label = "tile")
                         Row(
                             Modifier.weight(1f).height(58.dp).clip(SatraShapes.Medium).background(bg)
-                                .then(if (isSel) Modifier.border(1.5.dp, c.accent, SatraShapes.Medium) else Modifier)
+                                .then(if (isSel) Modifier.border(1.5.dp, mc, SatraShapes.Medium) else Modifier)
                                 .semantics(mergeDescendants = true) { selected = isSel; role = Role.RadioButton }
                                 .satraClickable(pressedScale = 0.97f) { sel = m }
-                                .padding(horizontal = 12.dp),
+                                                .padding(start = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Icon(modeIcon(m), null, tint = if (isSel) c.accent else c.textSecondary, modifier = Modifier.size(20.dp))
+                            Text(modeEmoji(m), fontSize = 19.sp)
                             Spacer(Modifier.width(10.dp))
                             Column(Modifier.weight(1f)) {
                                 Text(stringResource(m.title), style = Satra.type.subhead.copy(fontWeight = FontWeight.SemiBold),
-                                    color = if (isSel) c.accent else c.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    color = if (isSel) mc else c.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 if (m == current) Text(stringResource(R.string.mode_current), style = Satra.type.caption, color = c.success)
+                            }
+                            // Separate, info-only target: never activates.
+                            val cd = stringResource(R.string.mi_info_cd, stringResource(m.title))
+                            Box(Modifier.size(44.dp).semantics { contentDescription = cd; role = Role.Button }.satraClickable { info = m }, contentAlignment = Alignment.Center) {
+                                Box(Modifier.size(24.dp).clip(CircleShape).background(mc.copy(alpha = 0.16f)), contentAlignment = Alignment.Center) {
+                                    Text("!", style = Satra.type.footnote.copy(fontWeight = FontWeight.Bold), color = mc)
+                                }
                             }
                         }
                     }
@@ -161,7 +174,7 @@ private fun ModeSheet(current: Mode, onDismiss: () -> Unit, onApply: (Mode) -> U
                 val changes = remember(sel) { ModeEngine.changes(sel) }
                 changes.forEach { ch ->
                     Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.size(6.dp).clip(CircleShape).background(c.accent))
+                        Box(Modifier.size(6.dp).clip(CircleShape).background(modeColor(sel)))
                         Spacer(Modifier.width(10.dp))
                         Text(if (ch.arg != null) stringResource(ch.label, ch.arg) else stringResource(ch.label), style = Satra.type.subhead, color = c.textPrimary)
                     }
@@ -202,14 +215,14 @@ private fun ModeReveal(mode: Mode, onDone: () -> Unit) {
                 Modifier.padding(32.dp).width(280.dp).clip(SatraShapes.Large).background(c.surfaceRaised).padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Box(Modifier.size(44.dp).clip(CircleShape).background(c.accent.copy(alpha = 0.16f)), contentAlignment = Alignment.Center) {
-                    Icon(modeIcon(mode), null, tint = c.accent, modifier = Modifier.size(22.dp))
+                Box(Modifier.size(44.dp).clip(CircleShape).background(modeColor(mode).copy(alpha = 0.16f)), contentAlignment = Alignment.Center) {
+                    Text(modeEmoji(mode), fontSize = 22.sp)
                 }
                 Spacer(Modifier.height(10.dp))
                 val name = stringResource(mode.title)
                 Text(
                     if (shown >= changes.size) stringResource(R.string.mode_on, name) else stringResource(R.string.mode_applying, name),
-                    style = Satra.type.headline, color = c.textPrimary, textAlign = TextAlign.Center,
+                    style = Satra.type.headline, color = if (shown >= changes.size) modeColor(mode) else c.textPrimary, textAlign = TextAlign.Center,
                 )
                 Spacer(Modifier.height(10.dp))
                 changes.forEachIndexed { i, ch ->

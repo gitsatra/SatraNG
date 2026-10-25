@@ -128,4 +128,6 @@
     <string name="sa_tor_cache_bad">The saved list is old; it refreshes on the next check when online.</string>
     <string name="sa_tor_cache_fix">Run the check again while connected.</string>
     <string name="sa_tor_cache_how">Age of the list saved from check.torproject.org/torbulkexitlist (refreshed daily, only during a check, via the tunnel).</string>
+    <string name="sa_tor_badge">Exit is a Tor node</string>
+    <string name="sa_tor_check">Run the Tor checks</string>
 </resources>

@@ -3,6 +3,10 @@ package com.v2ray.ang.ui.home
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import androidx.compose.material3.Icon
+import androidx.compose.foundation.layout.size
+import com.v2ray.ang.ui.compose.satra.SatraIcons
+import com.v2ray.ang.ui.compose.satra.satraClickable
 import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -16,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -50,6 +55,16 @@ internal fun exitChipLabel(ip: String, country: String?): String {
 internal object ExitIpChipCache {
     @Volatile var sessionStartMs = 0L
     @Volatile var exit: Pair<String, String?>? = null
+    /** True when the current exit IP is a known Tor exit (offline list; refreshed through the tunnel every 3 days at most). */
+    val tor = kotlinx.coroutines.flow.MutableStateFlow(false)
+
+    /** Runs once per exit-IP fetch (already done at connect): no extra polling. IO thread. */
+    fun detectTor(ctx: Context, ip: String) {
+        val app = ctx.applicationContext
+        tor.value = com.v2ray.ang.handler.TorExits.isExit(app, ip)
+        if (com.v2ray.ang.handler.TorExits.refreshIfStale(app, 3L * 86_400_000L) { com.v2ray.ang.handler.SecurityAudit.tunnelGet(it) })
+            tor.value = com.v2ray.ang.handler.TorExits.isExit(app, ip)
+    }
 }
 
 /** Exit IP chip + security chip in one compact row (no extra Home height beyond one line). */
@@ -61,7 +76,27 @@ internal fun ConnectedChips(sessionStartMs: Long) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         ExitIpChip(sessionStartMs)
-        SecurityChip(sessionStartMs, Modifier)
+        val tor by ExitIpChipCache.tor.collectAsState()
+        if (tor) TorBadge() else SecurityChip(sessionStartMs, Modifier)
+    }
+}
+
+/** Calm warning pill shown instead of the security chip when the exit is a Tor node; opens the Tor checks. */
+@Composable
+private fun TorBadge() {
+    val c = Satra.colors
+    val ctx = LocalContext.current
+    Row(
+        Modifier.clip(SatraShapes.Pill).background(c.warningSoft)
+            .satraClickable(pressedScale = 0.95f) {
+                ctx.startActivity(android.content.Intent(ctx, com.v2ray.ang.ui.security.SecurityCheckActivity::class.java).putExtra("tor", true))
+            }
+            .padding(horizontal = 12.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(SatraIcons.Warning, null, tint = c.warning, modifier = Modifier.size(14.dp))
+        Spacer(Modifier.width(5.dp))
+        Text(stringResource(R.string.sa_tor_badge), style = Satra.type.footnote.copy(fontWeight = FontWeight.SemiBold), color = c.warning, maxLines = 1)
     }
 }
 
@@ -75,10 +110,12 @@ internal fun ExitIpChip(sessionStartMs: Long) {
         mutableStateOf(ExitIpChipCache.exit.takeIf { ExitIpChipCache.sessionStartMs == sessionStartMs })
     }
     LaunchedEffect(sessionStartMs) {
+        if (exit == null) ExitIpChipCache.tor.value = false
         var attempt = 0
         while (exit == null && attempt < 3) {
             delay(if (attempt == 0) 1_500L else 4_000L)
             val r = withContext(Dispatchers.IO) { runCatching { SecurityCheck.liveExit() }.getOrNull() }
+            if (r != null) withContext(Dispatchers.IO) { runCatching { ExitIpChipCache.detectTor(ctx, r.first) } }
             if (r != null) {
                 ExitIpChipCache.sessionStartMs = sessionStartMs
                 ExitIpChipCache.exit = r

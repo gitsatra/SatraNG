@@ -26,9 +26,9 @@ object TorExits {
     fun isExit(ctx: Context, ip: String?): Boolean = ip != null && ip in load(ctx)
 
     /** [fetch] gets the URL through the tunnel. Returns true when the cache is fresh afterwards. */
-    fun refreshIfStale(ctx: Context, fetch: (String) -> String?): Boolean {
+    fun refreshIfStale(ctx: Context, maxAgeMs: Long = MAX_AGE_MS, fetch: (String) -> String?): Boolean {
         val age = ageMs(ctx)
-        if (age != null && age < MAX_AGE_MS) return true
+        if (age != null && age < maxAgeMs) return true
         val body = runCatching { fetch(LIST_URL) }.getOrNull()
         val ips = body?.lines()?.map { it.trim() }?.filter { it.matches(Regex("[0-9a-fA-F:.]{7,45}")) }.orEmpty()
         if (ips.size < 100) { LogUtil.w(AppConfig.TAG, "TorExits: refresh failed (${ips.size})"); return age != null }

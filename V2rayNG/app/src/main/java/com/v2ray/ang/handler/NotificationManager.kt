@@ -136,7 +136,7 @@ object NotificationManager {
         val mode = ModeEngine.read()
         mBuilder?.addAction(R.drawable.ic_notif_satra, res.getString(R.string.notif_mode_action), modePendingIntent)
         if (mode != ModeEngine.Mode.NORMAL) {
-            mBuilder?.setSubText(res.getString(R.string.mode_on, res.getString(mode.title)))
+            mBuilder?.setSubText(com.v2ray.ang.ui.home.modeEmoji(mode) + " " + res.getString(R.string.mode_on, res.getString(mode.title)))
         }
         if (prefs.actionRestart) {
             mBuilder?.addAction(

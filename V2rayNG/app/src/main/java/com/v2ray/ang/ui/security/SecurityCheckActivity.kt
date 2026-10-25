@@ -100,7 +100,10 @@ private fun AuditScreen(onBack: () -> Unit) {
     val running by SecurityAudit.running.collectAsState()
     val started by SecurityAudit.started.collectAsState()
     var offline by remember { mutableStateOf(false) }
-    val tor = !running && SecurityAudit.torExit && results.isNotEmpty()
+    val homeTor by com.v2ray.ang.ui.home.ExitIpChipCache.tor.collectAsState()
+    val tor = homeTor || (!running && SecurityAudit.torExit && results.isNotEmpty())
+    val scroll = androidx.compose.foundation.rememberScrollState()
+    LaunchedEffect(running, tor) { if (!running && tor && results.isNotEmpty()) scroll.animateScrollTo(scroll.maxValue) }
     val scope = rememberCoroutineScope()
     fun start() {
         if (running) return
@@ -114,7 +117,7 @@ private fun AuditScreen(onBack: () -> Unit) {
     val score = SecurityAudit.score(done)
     val progress = done.size / SecurityAudit.CHECKS.size.toFloat()
     val nextId = if (running) SecurityAudit.CHECKS.firstOrNull { it.id !in results }?.id else null
-    SatraScrollPage(title = stringResource(R.string.sx_sec_title), onBack = onBack) {
+    SatraScrollPage(title = stringResource(R.string.sx_sec_title), onBack = onBack, scrollState = scroll) {
         Column(Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             ScoreRing(if (started) score else 0, running, started && !offline, progress)
             Spacer(Modifier.height(10.dp))
@@ -141,7 +144,7 @@ private fun AuditScreen(onBack: () -> Unit) {
                 )
             }
         }
-        androidx.compose.animation.AnimatedVisibility(tor) { TorBanner() }
+        androidx.compose.animation.AnimatedVisibility(tor) { TorBanner(showButton = !running && results.isEmpty()) { start() } }
         if (started && !offline) {
             SecurityAudit.Cat.entries.forEach { cat ->
                 val checks = SecurityAudit.CHECKS.filter { it.cat == cat }
@@ -162,7 +165,7 @@ private fun AuditScreen(onBack: () -> Unit) {
 }
 
 @Composable
-private fun TorBanner() {
+private fun TorBanner(showButton: Boolean, onCheck: () -> Unit) {
     val c = Satra.colors
     Column(
         Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp)
@@ -171,6 +174,10 @@ private fun TorBanner() {
         Text(stringResource(R.string.sa_tor_on), style = Satra.type.headline, color = c.warning)
         Spacer(Modifier.height(4.dp))
         Text(stringResource(R.string.sa_tor_on_sub), style = Satra.type.footnote, color = c.textPrimary)
+        if (showButton) {
+            Spacer(Modifier.height(10.dp))
+            SatraButton(stringResource(R.string.sa_tor_check), onClick = onCheck, style = com.v2ray.ang.ui.compose.satra.SatraButtonStyle.Tinted, compact = true)
+        }
     }
 }
 

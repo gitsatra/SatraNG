@@ -128,4 +128,6 @@
     <string name="sa_tor_cache_bad">Список устарел и обновится при следующей проверке.</string>
     <string name="sa_tor_cache_fix">Запустите проверку при подключении.</string>
     <string name="sa_tor_cache_how">Возраст списка из check.torproject.org/torbulkexitlist (обновляется раз в день, только при проверке, через туннель).</string>
+    <string name="sa_tor_badge">Выход — узел Tor</string>
+    <string name="sa_tor_check">Проверить Tor</string>
 </resources>

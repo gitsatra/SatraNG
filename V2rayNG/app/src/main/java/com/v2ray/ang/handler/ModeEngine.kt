@@ -72,7 +72,7 @@ object ModeEngine {
         )
         Mode.SECURE -> listOf(
             Change(R.string.ch_dns_proxy), Change(R.string.ch_quic_block), Change(R.string.ch_utls),
-            Change(R.string.ch_fragment), Change(R.string.ch_ipv6_off),
+            Change(R.string.ch_ipv6_off),
         )
         Mode.FORTRESS -> changes(Mode.SECURE) + Change(R.string.ch_strict)
         Mode.STREAM -> listOf(Change(R.string.ch_mux_off), Change(R.string.ch_quic_allow), Change(R.string.ch_mtu, "1500"))
@@ -107,8 +107,6 @@ object ModeEngine {
         )
         Mode.SECURE, Mode.FORTRESS -> mapOf(
             AppConfig.PREF_SNIFFING_ENABLED to true,
-            AppConfig.PREF_ROUTE_ONLY_ENABLED to false,
-            AppConfig.PREF_FRAGMENT_ENABLED to true,
             AppConfig.PREF_PREFER_IPV6 to false,
             AppConfig.PREF_IPV6_ENABLED to false,
             AppConfig.PREF_REMOTE_DNS to "https://1.1.1.1/dns-query,https://8.8.8.8/dns-query",
@@ -143,7 +141,7 @@ object ModeEngine {
             }
             if (pre.size() > 0) prependRules(root, pre)
             val mux = root.getAsJsonArray("outbounds")?.firstOrNull()?.asJsonObject?.getAsJsonObject("mux")?.get("enabled")
-            LogUtil.i(AppConfig.TAG, "ModeEngine: applied ${m.id} (+${pre.size()} rules, mux=$mux, rules=${root.getAsJsonObject("routing")?.getAsJsonArray("rules")?.size()})")
+            LogUtil.w(AppConfig.TAG, "ModeEngine: applied ${m.id} (+${pre.size()} rules, mux=$mux, rules=${root.getAsJsonObject("routing")?.getAsJsonArray("rules")?.size()})")
             root.toString()
         } catch (e: Exception) {
             LogUtil.w(AppConfig.TAG, "ModeEngine: post-pass skipped: ${e.javaClass.simpleName}")
@@ -171,7 +169,6 @@ object ModeEngine {
             listOf("tlsSettings", "realitySettings").forEach { k ->
                 val t = ss.getAsJsonObject(k) ?: return@forEach
                 if (!t.has("fingerprint") || t.get("fingerprint").asString.isBlank()) t.addProperty("fingerprint", "chrome")
-                if (k == "tlsSettings") t.addProperty("allowInsecure", false)
             }
         }
     }

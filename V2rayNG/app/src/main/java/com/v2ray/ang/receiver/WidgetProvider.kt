@@ -65,7 +65,7 @@ class WidgetProvider : AppWidgetProvider() {
             views.setInt(R.id.layout_background, "setBackgroundResource",
                 if (running) R.drawable.widget_bg_on else R.drawable.widget_bg_off)
             views.setInt(R.id.image_switch, "setImageResource", if (running) R.drawable.ic_satra_logo_full_green else R.drawable.ic_satra_logo_full_orange)
-            val state = context.getString(
+            val state = com.v2ray.ang.handler.AppLocaleManager.currentContext(context).getString(
                 when {
                     pending && running -> R.string.sx_toggle_connecting
                     running -> R.string.sx_toggle_on
@@ -77,7 +77,7 @@ class WidgetProvider : AppWidgetProvider() {
             val flag = ToggleSurfaces.selectedFlag()
             views.setTextViewText(R.id.text_flag, flag)
             views.setViewVisibility(R.id.text_flag, if (flag.isEmpty()) View.GONE else View.VISIBLE)
-            views.setContentDescription(R.id.layout_switch, "${context.getString(R.string.app_name)}: $state")
+            views.setContentDescription(R.id.layout_switch, "${com.v2ray.ang.handler.AppLocaleManager.currentContext(context).getString(R.string.app_name)}: $state")
             for (id in ids) manager.updateAppWidget(id, views)
         }
     }

@@ -597,6 +597,22 @@ object CoreServiceManager {
                     reloadForPolicyChange()
                 }
 
+                AppConfig.MSG_SET_MODE -> {
+                    val before = com.v2ray.ang.handler.ModeEngine.read()
+                    val arg = intent.getSerializableExtra("content") as? String
+                    val next = if (arg == "cycle") com.v2ray.ang.handler.ModeEngine.cycleNext(before)
+                    else com.v2ray.ang.handler.ModeEngine.Mode.fromId(arg)
+                    if (next != before) {
+                        com.v2ray.ang.handler.ModeEngine.set(next)
+                        LogUtil.i(AppConfig.TAG, "StartCore-Manager: mode ${before.id} -> ${next.id}")
+                        if (isRunning()) restartForPolicyChange() else NotificationManager.refreshLanguage()
+                    }
+                }
+
+                AppConfig.MSG_REFRESH_LANGUAGE -> {
+                    NotificationManager.refreshLanguage()
+                }
+
                 AppConfig.MSG_STATE_STOP -> {
                     LogUtil.i(AppConfig.TAG, "StartCore-Manager: Stop service")
                     serviceControl.stopService()

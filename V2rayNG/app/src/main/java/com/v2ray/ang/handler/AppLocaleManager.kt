@@ -46,6 +46,16 @@ object AppLocaleManager {
         val language = Language.fromCode(languageCode)
         persistLegacyPreference(language)
         AppCompatDelegate.setApplicationLocales(language.toLocaleList())
+        refreshOutsideSurfaces()
+    }
+
+    /** Notification, Quick Settings tile, widget and launcher shortcuts follow the app language. */
+    private fun refreshOutsideSurfaces() {
+        val app = com.v2ray.ang.AngApplication.application
+        val ctx = currentContext(app)
+        com.v2ray.ang.core.ToggleSurfaces.publishShortcuts(ctx)
+        com.v2ray.ang.core.ToggleSurfaces.refresh(app)
+        com.v2ray.ang.helper.MessageHelper.sendMsg2Service(app, AppConfig.MSG_REFRESH_LANGUAGE, "")
     }
 
     /**
@@ -62,6 +72,20 @@ object AppLocaleManager {
         val language = storedLanguage()
         language.locale ?: return context
         val configuration = Configuration(context.resources.configuration)
+        ConfigurationCompat.setLocales(configuration, language.toLocaleList())
+        return context.createConfigurationContext(configuration)
+    }
+
+    /**
+     * A context localized from the stored in-app language, read fresh on every call. Long-lived
+     * daemon-process services keep the locale they were attached with, so anything they render
+     * later (notification text/actions, tile labels, shortcuts) must use this instead.
+     */
+    fun currentContext(context: Context): Context {
+        val language = storedLanguage()
+        val locale = language.locale ?: return context
+        val configuration = Configuration(context.resources.configuration)
+        if (ConfigurationCompat.getLocales(configuration).get(0) == locale) return context
         ConfigurationCompat.setLocales(configuration, language.toLocaleList())
         return context.createConfigurationContext(configuration)
     }

@@ -1037,6 +1037,7 @@ object MmkvManager {
      * @return The settings value.
      */
     fun decodeSettingsString(key: String): String? {
+        (ModeEngine.override(key) as? String)?.let { return it }
         return settingsStorage.decodeString(key)
     }
 
@@ -1048,6 +1049,7 @@ object MmkvManager {
      * @return The settings value.
      */
     fun decodeSettingsString(key: String, defaultValue: String?): String? {
+        (ModeEngine.override(key) as? String)?.let { return it }
         return settingsStorage.decodeString(key, defaultValue)
     }
 
@@ -1091,6 +1093,7 @@ object MmkvManager {
      * @return The settings value.
      */
     fun decodeSettingsBool(key: String): Boolean {
+        (ModeEngine.override(key) as? Boolean)?.let { return it }
         return settingsStorage.decodeBool(key, false)
     }
 
@@ -1102,6 +1105,7 @@ object MmkvManager {
      * @return The settings value.
      */
     fun decodeSettingsBool(key: String, defaultValue: Boolean): Boolean {
+        (ModeEngine.override(key) as? Boolean)?.let { return it }
         return settingsStorage.decodeBool(key, defaultValue)
     }
 

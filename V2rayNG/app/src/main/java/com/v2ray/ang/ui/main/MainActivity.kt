@@ -195,6 +195,7 @@ class MainActivity : HelperBaseComponentActivity(), AppNav {
 
     override fun onResume() {
         super.onResume()
+        com.v2ray.ang.handler.ModeEngine.current()
         val restart = SettingsChangeManager.consumeRestartService()
         val refresh = SettingsChangeManager.consumeSetupGroupTab()
         mainViewModel.refreshUiSettings()

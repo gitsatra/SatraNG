@@ -21,6 +21,8 @@ import java.lang.ref.SoftReference
 
 class QSTileService : TileService() {
 
+    private fun lc(): Context = AppLocaleManager.currentContext(this)
+
     override fun attachBaseContext(newBase: Context?) {
         super.attachBaseContext(newBase?.let(AppLocaleManager::localizedContext))
     }
@@ -39,9 +41,9 @@ class QSTileService : TileService() {
         else ToggleSurfaces.selectedName(this)
         tile.label = name
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-            tile.subtitle = getString(if (on) R.string.sx_toggle_on else R.string.sx_toggle_off)
+            tile.subtitle = lc().getString(if (on) R.string.sx_toggle_on else R.string.sx_toggle_off)
         }
-        tile.contentDescription = "${getString(R.string.app_name)}: $name, ${getString(if (on) R.string.sx_toggle_on else R.string.sx_toggle_off)}"
+        tile.contentDescription = "${lc().getString(R.string.app_name)}: $name, ${lc().getString(if (on) R.string.sx_toggle_on else R.string.sx_toggle_off)}"
         tile.updateTile()
     }
 
@@ -103,7 +105,7 @@ class QSTileService : TileService() {
         val tile = qsTile ?: return
         tile.state = if (on) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-            tile.subtitle = getString(if (on) R.string.sx_toggle_connecting else R.string.sx_toggle_off)
+            tile.subtitle = lc().getString(if (on) R.string.sx_toggle_connecting else R.string.sx_toggle_off)
         }
         tile.updateTile()
     }

@@ -139,7 +139,16 @@ fun SatraApp(
                                     com.v2ray.ang.handler.MmkvManager.encodeSettings(com.v2ray.ang.handler.RoutingPolicy.PREF_TIP_SEEN, true)
                                     Unit
                                 }
+                                val mode by com.v2ray.ang.handler.ModeEngine.mode.collectAsState()
+                                LaunchedEffect(Unit) { com.v2ray.ang.handler.ModeEngine.current() }
                                 HomeScreen(
+                                    mode = mode,
+                                    onMode = { m ->
+                                        com.v2ray.ang.handler.ModeEngine.set(m)
+                                        // Same path as the smart-routing switch: reconnect only if already connected.
+                                        com.v2ray.ang.handler.SettingsChangeManager.makeRestartService()
+                                        nav.reconnectForModeChange()
+                                    },
                                     smartRoutingOn = smartOn,
                                     smartRegion = if (russia) com.v2ray.ang.ui.home.SmartRegion.Russia else if (com.v2ray.ang.handler.RoutingPolicy.isChina(com.v2ray.ang.handler.MmkvManager.decodeRoutingRulesets())) com.v2ray.ang.ui.home.SmartRegion.China else com.v2ray.ang.ui.home.SmartRegion.Iran,
                                     smartTip = smartTip,

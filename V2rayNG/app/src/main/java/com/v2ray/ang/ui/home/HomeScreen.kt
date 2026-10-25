@@ -122,6 +122,8 @@ fun HomeScreen(
     updateVersion: String? = null,
     updateProgress: Float? = null,
     onUpdate: () -> Unit = {},
+    mode: com.v2ray.ang.handler.ModeEngine.Mode = com.v2ray.ang.handler.ModeEngine.Mode.NORMAL,
+    onMode: (com.v2ray.ang.handler.ModeEngine.Mode) -> Unit = {},
 ) {
     val hasServers = state.groups.isNotEmpty() && state.selectedGuid != null
     Column(modifier.fillMaxSize()) {
@@ -171,7 +173,7 @@ fun HomeScreen(
             BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
                 val fontScale = LocalDensity.current.fontScale.coerceAtLeast(1f)
                 // Title + chips + server card + summary strip + margins; the orb takes what is left.
-                val fixed = (64 + 40 + 76 + 64 + 36 + 62 + (if (smartTip) 46 else 0)) * fontScale
+                val fixed = (64 + 40 + 76 + 64 + 36 + 62 + 78 + (if (smartTip) 46 else 0)) * fontScale
                 val orb = (maxHeight.value - fixed).coerceIn(112f, 264f).dp
                 val connected = state.phase == ConnectPhase.Connected && live.sessionStartMs > 0L
                 val exitPoint = ExitLocation.point.value
@@ -199,6 +201,8 @@ fun HomeScreen(
                         onToggle = onSmartRouting, onInfo = onRoutingInfo, onDismissTip = onDismissSmartTip,
                         modifier = Modifier.padding(horizontal = SatraSpace.Gutter),
                     )
+                    Spacer(Modifier.height(6.dp))
+                    ModeBar(current = mode, onPick = onMode, modifier = Modifier.padding(horizontal = SatraSpace.Gutter))
                     Spacer(Modifier.height(8.dp))
                     SummaryStrip(live, state.quota, onClick = { details = true }, modifier = Modifier.padding(horizontal = SatraSpace.Gutter))
                     Spacer(Modifier.height(12.dp))

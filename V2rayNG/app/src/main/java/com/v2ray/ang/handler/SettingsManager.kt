@@ -433,6 +433,7 @@ object SettingsManager {
      * Get the VPN MTU from settings, defaulting to AppConfig.VPN_MTU.
      */
     fun getVpnMtu(): Int {
+        (ModeEngine.overrideFor(AppConfig.PREF_VPN_MTU) as? String)?.let { return Utils.parseInt(it, AppConfig.VPN_MTU) }
         return Utils.parseInt(MmkvManager.decodeSettingsString(AppConfig.PREF_VPN_MTU), AppConfig.VPN_MTU)
     }
 

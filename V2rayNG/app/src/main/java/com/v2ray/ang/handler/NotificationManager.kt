@@ -45,6 +45,8 @@ object NotificationManager {
      * Starts the speed notification.
      * @param currentConfig The current profile configuration.
      */
+    private var lastConfig: ProfileItem? = null
+
     fun isSpeedNotificationRunning(): Boolean = speedNotificationJob != null
 
     fun startSpeedNotification() {
@@ -70,6 +72,8 @@ object NotificationManager {
      */
     fun showNotification(currentConfig: ProfileItem?) {
         val service = getService() ?: return
+        lastConfig = currentConfig
+        val res = AppLocaleManager.currentContext(service)
 
         // Reset last query time to avoid querying stats too soon after showing the notification
         lastQueryTime = System.currentTimeMillis()
@@ -99,12 +103,12 @@ object NotificationManager {
             }
 
         val prefs = NotificationPrefs.state.value
-        val title = service.getString(R.string.satra_notif_title_connected)
+        val title = res.getString(R.string.satra_notif_title_connected)
         val subtitle = buildString {
             if (prefs.showLocation && !currentConfig?.remarks.isNullOrBlank()) {
                 append(currentConfig?.remarks)
             }
-            if (isEmpty()) append(service.getString(R.string.app_name))
+            if (isEmpty()) append(res.getString(R.string.app_name))
         }
         mBuilder = NotificationCompat.Builder(service, channelId)
             .setSmallIcon(R.drawable.ic_notif_satra)
@@ -119,14 +123,29 @@ object NotificationManager {
         if (prefs.actionStop) {
             mBuilder?.addAction(
                 R.drawable.ic_delete_24dp,
-                service.getString(R.string.notification_action_stop_v2ray),
+                res.getString(R.string.notification_action_stop_v2ray),
                 stopV2RayPendingIntent
             )
+        }
+        // Mode: one compact action that cycles Normal → Game → Secure (labels in the app language).
+        val modeIntent = Intent(AppConfig.BROADCAST_ACTION_SERVICE)
+        modeIntent.`package` = AppConfig.ANG_PACKAGE
+        modeIntent.putExtra("key", AppConfig.MSG_SET_MODE)
+        modeIntent.putExtra("content", "cycle")
+        val modePendingIntent = PendingIntent.getBroadcast(service, NOTIFICATION_PENDING_INTENT_STOP_V2RAY + 40, modeIntent, flags)
+        val mode = ModeEngine.read()
+        mBuilder?.addAction(
+            R.drawable.ic_notif_satra,
+            res.getString(R.string.notif_mode_action, res.getString(mode.title)),
+            modePendingIntent
+        )
+        if (mode != ModeEngine.Mode.NORMAL) {
+            mBuilder?.setSubText(res.getString(R.string.mode_on, res.getString(mode.title)))
         }
         if (prefs.actionRestart) {
             mBuilder?.addAction(
                 R.drawable.ic_restore_24dp,
-                service.getString(R.string.title_service_restart),
+                res.getString(R.string.title_service_restart),
                 restartV2RayPendingIntent
             )
         }
@@ -136,12 +155,12 @@ object NotificationManager {
         val publicBuilder = NotificationCompat.Builder(service, channelId)
             .setSmallIcon(R.drawable.ic_notif_satra)
             .setContentTitle(title)
-            .setContentText(service.getString(R.string.app_name))
+            .setContentText(res.getString(R.string.app_name))
             .setOngoing(true)
             .setShowWhen(false)
             .setContentIntent(contentPendingIntent)
             .setColor(NOTIF_GREEN)
-            .addAction(R.drawable.ic_delete_24dp, service.getString(R.string.notification_action_stop_v2ray), stopV2RayPendingIntent)
+            .addAction(R.drawable.ic_delete_24dp, res.getString(R.string.notification_action_stop_v2ray), stopV2RayPendingIntent)
         mBuilder?.setPublicVersion(publicBuilder.build())
         mBuilder?.setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
 
@@ -155,6 +174,11 @@ object NotificationManager {
      * return early. A duplicate startForegroundService call still requires the service
      * to enter foreground state promptly, even when the core is already running.
      */
+    /** Re-render with the current in-app language (called after a language change). */
+    fun refreshLanguage() {
+        if (mBuilder != null) showNotification(lastConfig)
+    }
+
     fun ensureForeground() {
         val service = getService() ?: return
         val notification = mBuilder?.build()
@@ -194,7 +218,7 @@ object NotificationManager {
         val channelId = AppConfig.RAY_NG_CHANNEL_ID
         val service = getService() ?: return channelId
         NotificationHelper.ensureNotificationChannel(
-            context = service,
+            context = AppLocaleManager.currentContext(service),
             channelId = channelId,
             channelNameRes = R.string.notification_channel_service,
             // Foreground-service notifications must remain visible; LOW is silent but valid.

@@ -33,7 +33,13 @@ object CoreConfigManager {
     /**
      * Build the runtime configuration for normal startup.
      */
-    fun getV2rayConfig(context: Context, guid: String): ConfigResult {
+    fun getV2rayConfig(context: Context, guid: String): ConfigResult =
+        com.v2ray.ang.handler.ModeEngine.during {
+            val r = getV2rayConfigInner(context, guid)
+            if (r.status && r.content.isNotEmpty()) r.copy(content = com.v2ray.ang.handler.ModeEngine.postProcess(context, r.content)) else r
+        }
+
+    private fun getV2rayConfigInner(context: Context, guid: String): ConfigResult {
         try {
             val configContext = CoreConfigContextBuilder.build(context, guid)
                 ?: return ConfigResult(

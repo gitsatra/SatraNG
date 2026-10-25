@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hand-maintained (MODES-SPEC v1). Do not regenerate. -->
+<resources>
+    <string name="mode_title">حالت</string>
+    <string name="mode_normal">عادی</string>
+    <string name="mode_normal_d">تنظیمات خودت، بدون تغییر</string>
+    <string name="mode_game">بازی</string>
+    <string name="mode_game_d">کمترین تأخیر برای بازی و تماس</string>
+    <string name="mode_secure">امن</string>
+    <string name="mode_secure_d">DNS و شکل ترافیک را از ISP پنهان می‌کند</string>
+    <string name="mode_fortress">دژ</string>
+    <string name="mode_fortress_d">همه‌چیز اجباری از تونل، هیچ نشتی</string>
+    <string name="mode_stream">استریم</string>
+    <string name="mode_stream_d">بیشترین سرعت برای ویدیو و دانلود</string>
+    <string name="mode_eco">صرفه‌جویی</string>
+    <string name="mode_eco_d">صرفه‌جویی در حجم و باتری، مسدود کردن تبلیغات</string>
+    <string name="mode_on">حالت %1$s روشن است</string>
+    <string name="mode_applying">در حال اعمال %1$s…</string>
+    <string name="gate_tun">فقط در حالت کل دستگاه</string>
+    <string name="ch_mux_off">Mux خاموش</string>
+    <string name="ch_mux_on">Mux روشن (۸)</string>
+    <string name="ch_dns_fast">یک DNS سریع</string>
+    <string name="ch_dns_proxy">DNS فقط از داخل تونل</string>
+    <string name="ch_quic_block">QUIC مسدود</string>
+    <string name="ch_quic_allow">UDP/QUIC مجاز</string>
+    <string name="ch_utls">اثر انگشت TLS کروم</string>
+    <string name="ch_fragment">تکه‌تکه کردن TLS</string>
+    <string name="ch_ipv6_off">IPv6 بیرون از تونل</string>
+    <string name="ch_strict">مسیر سخت‌گیرانه، بدون دور زدن</string>
+    <string name="ch_sniff_light">شناسایی سبک</string>
+    <string name="ch_mtu">MTU %1$s</string>
+    <string name="ch_stack">پشتهٔ شبکه: %1$s</string>
+    <string name="ch_best_ping">ترجیح سرور با کمترین پینگ</string>
+    <string name="ch_ads">تبلیغات و ردیاب‌ها مسدود</string>
+    <string name="ch_probe_slow">آزمایش پس‌زمینهٔ کمتر</string>
+    <string name="ch_none">بدون تغییر</string>
+    <string name="notif_mode_action">حالت: %1$s</string>
+</resources>

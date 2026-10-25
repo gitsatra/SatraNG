@@ -55,7 +55,7 @@ class AngApplication : Application() {
         // Initialize theme state from MMKV
         ThemeManager.refresh()
 
-        if (isMainProcess()) Thread { runCatching { com.v2ray.ang.core.ToggleSurfaces.publishShortcuts(this) } }.apply { priority = Thread.MIN_PRIORITY }.start()
+        if (isMainProcess()) Thread { runCatching { com.v2ray.ang.core.ToggleSurfaces.publishShortcuts(com.v2ray.ang.handler.AppLocaleManager.currentContext(this)) } }.apply { priority = Thread.MIN_PRIORITY }.start()
     }
 
     private fun isMainProcess(): Boolean =

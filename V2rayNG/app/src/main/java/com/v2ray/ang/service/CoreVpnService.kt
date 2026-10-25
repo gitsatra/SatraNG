@@ -252,7 +252,8 @@ class CoreVpnService : VpnService(), ServiceControl {
         // native IPv6 cannot leak off-VPN. Same policy for every package — not per-app.
         // Removal: restore full IPv6 tunnel when ProcessUidResolver is proven reliable for v6
         // on all supported OEMs with process routing.
-        val ipv6User = MmkvManager.decodeSettingsBool(AppConfig.PREF_IPV6_ENABLED, AppConfig.DEFAULT_IPV6_ENABLED)
+        val ipv6User = (com.v2ray.ang.handler.ModeEngine.overrideFor(AppConfig.PREF_IPV6_ENABLED) as? Boolean)
+            ?: MmkvManager.decodeSettingsBool(AppConfig.PREF_IPV6_ENABLED, AppConfig.DEFAULT_IPV6_ENABLED)
         val appLimitsOn = UsageRulesRepository.rules().any { it.enabled && it.matchesApps }
         if (ipv6User && !appLimitsOn) {
             builder.addAddress(vpnConfig.ipv6Client, 126)

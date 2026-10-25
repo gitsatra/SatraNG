@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hand-maintained (MODES-SPEC v1). Do not regenerate. -->
+<resources>
+    <string name="mode_title">Mode</string>
+    <string name="mode_normal">Normal</string>
+    <string name="mode_normal_d">Your settings, unchanged</string>
+    <string name="mode_game">Game</string>
+    <string name="mode_game_d">Lowest latency for games and calls</string>
+    <string name="mode_secure">Secure</string>
+    <string name="mode_secure_d">Hides DNS and traffic shape from your ISP</string>
+    <string name="mode_fortress">Fortress</string>
+    <string name="mode_fortress_d">Everything forced through the tunnel, nothing leaks</string>
+    <string name="mode_stream">Streaming</string>
+    <string name="mode_stream_d">Maximum throughput for video and downloads</string>
+    <string name="mode_eco">Economy</string>
+    <string name="mode_eco_d">Saves data and battery, blocks ads</string>
+    <string name="mode_on">%1$s mode is on</string>
+    <string name="mode_applying">Applying %1$s…</string>
+    <string name="gate_tun">Available in Whole device mode</string>
+    <string name="ch_mux_off">Multiplexing off</string>
+    <string name="ch_mux_on">Multiplexing on (8)</string>
+    <string name="ch_dns_fast">Single fast DNS</string>
+    <string name="ch_dns_proxy">DNS only through the tunnel</string>
+    <string name="ch_quic_block">QUIC blocked</string>
+    <string name="ch_quic_allow">UDP/QUIC allowed</string>
+    <string name="ch_utls">Chrome TLS fingerprint</string>
+    <string name="ch_fragment">TLS fragmentation</string>
+    <string name="ch_ipv6_off">IPv6 kept out of the tunnel</string>
+    <string name="ch_strict">Strict route, no bypass</string>
+    <string name="ch_sniff_light">Light sniffing</string>
+    <string name="ch_mtu">MTU %1$s</string>
+    <string name="ch_stack">Network stack: %1$s</string>
+    <string name="ch_best_ping">Prefers the lowest-ping server</string>
+    <string name="ch_ads">Ads and trackers blocked</string>
+    <string name="ch_probe_slow">Fewer background probes</string>
+    <string name="ch_none">No changes</string>
+    <string name="notif_mode_action">Mode: %1$s</string>
+</resources>

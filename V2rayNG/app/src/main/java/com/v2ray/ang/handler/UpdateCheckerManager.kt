@@ -47,7 +47,14 @@ object UpdateCheckerManager {
     }
 
     suspend fun checkForUpdate(includePreRelease: Boolean = false): CheckUpdateResult = withContext(Dispatchers.IO) {
-        if (!includePreRelease) runCatching { checkHub() }.getOrNull()?.let { return@withContext it }
+        // Hub first; GitHub (gitsatra/SatraNG) when the Hub is unreachable or has nothing newer (it may lag behind).
+        val hub = if (!includePreRelease) runCatching { checkHub() }.getOrNull() else null
+        if (hub?.hasUpdate == true) return@withContext hub
+        if (hub != null) return@withContext runCatching { checkGitHub(false) }.getOrNull() ?: hub
+        return@withContext checkGitHub(includePreRelease)
+    }
+
+    private fun checkGitHub(includePreRelease: Boolean): CheckUpdateResult {
         val url = if (includePreRelease) {
             AppConfig.APP_API_URL
         } else {
@@ -85,7 +92,7 @@ object UpdateCheckerManager {
             JsonUtil.fromJsonSafe(response, GitHubRelease::class.java)
         }
         if (latestRelease == null) {
-            return@withContext CheckUpdateResult(hasUpdate = false)
+            return CheckUpdateResult(hasUpdate = false)
         }
 
         val latestVersion = latestRelease.tagName.removePrefix("v")
@@ -94,7 +101,7 @@ object UpdateCheckerManager {
             "Found new version: $latestVersion (current: ${BuildConfig.VERSION_NAME})"
         )
 
-        return@withContext if (compareVersions(latestVersion, BuildConfig.VERSION_NAME) > 0) {
+        return if (compareVersions(latestVersion, BuildConfig.VERSION_NAME) > 0) {
             val downloadUrl = getDownloadUrl(latestRelease, Build.SUPPORTED_ABIS[0])
             CheckUpdateResult(
                 hasUpdate = true,

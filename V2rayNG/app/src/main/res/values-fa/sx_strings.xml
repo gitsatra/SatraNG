@@ -412,7 +412,7 @@
     <string name="sx_sec_weak">اتصال شما نیاز به توجه دارد</string>
     <string name="sx_sec_fixes">راه‌های بهتر شدن</string>
     <string name="sx_sec_run_again">بررسی دوباره</string>
-    <string name="sx_sec_footer">این بررسی از سرویس‌های عمومی (ip.sb، ip-api.com، ipify) می‌پرسد چه می‌بینند؛ از داخل تونل و یک بار بدون آن برای مقایسهٔ کشور. چیزی ذخیره نمی‌شود.</string>
+    <string name="sx_sec_footer">این بررسی از سرویس‌های عمومی (ip.sb، ip-api.com، ipify) می‌پرسد چه می‌بینند؛ از داخل تونل و یک بار بدون آن برای مقایسهٔ کشور. نتیجه‌ها ذخیره نمی‌شوند؛ فقط فهرست عمومی خروجی‌های Tor برای سریع‌تر شدن بررسی Tor روی گوشی نگه داشته می‌شود.</string>
     <string name="sx_sec_score">امتیاز</string>
     <string name="sx_sec_pass">محافظت‌شده</string>
     <string name="sx_sec_warn">بررسی کنید</string>

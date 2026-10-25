@@ -205,6 +205,8 @@ class MainActivity : HelperBaseComponentActivity(), AppNav {
     override fun onResume() {
         super.onResume()
         com.v2ray.ang.handler.ModeEngine.current()
+        // Language can also change from Android Settings (per-app language); keep launcher shortcuts in step.
+        runCatching { com.v2ray.ang.handler.AppLocaleManager.syncFromSystem(this) }
         val restart = SettingsChangeManager.consumeRestartService()
         val refresh = SettingsChangeManager.consumeSetupGroupTab()
         mainViewModel.refreshUiSettings()

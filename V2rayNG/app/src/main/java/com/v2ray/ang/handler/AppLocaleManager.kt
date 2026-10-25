@@ -49,6 +49,22 @@ object AppLocaleManager {
         refreshOutsideSurfaces()
     }
 
+    /**
+     * The language may also be changed from Android Settings (per-app language). On resume, pick
+     * that up so the notification, tile, widget and shortcuts follow it too.
+     */
+    @Volatile private var lastSurfaceLanguage: String? = null
+
+    fun syncFromSystem(activity: Context) {
+        val shown = ConfigurationCompat.getLocales(activity.resources.configuration).get(0)?.language
+        if (shown == lastSurfaceLanguage) return
+        lastSurfaceLanguage = shown
+        val tag = AppCompatDelegate.getApplicationLocales().get(0)?.toLanguageTag()
+        val system = Language.fromLanguageTag(tag)
+        if (system != storedLanguage()) persistLegacyPreference(system)
+        Thread { runCatching { refreshOutsideSurfaces() } }.apply { priority = Thread.MIN_PRIORITY }.start()
+    }
+
     /** Notification, Quick Settings tile, widget and launcher shortcuts follow the app language. */
     private fun refreshOutsideSurfaces() {
         val app = com.v2ray.ang.AngApplication.application

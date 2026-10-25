@@ -436,7 +436,7 @@
     <string name="sx_sec_weak">Подключению нужно внимание</string>
     <string name="sx_sec_fixes">Как улучшить</string>
     <string name="sx_sec_run_again">Проверить снова</string>
-    <string name="sx_sec_footer">Проверка спрашивает публичные сервисы (ip.sb, ip-api.com, ipify), что они видят — через туннель и один раз без него для сравнения стран. Ничего не сохраняется.</string>
+    <string name="sx_sec_footer">Проверка спрашивает публичные сервисы (ip.sb, ip-api.com, ipify), что они видят — через туннель и один раз без него для сравнения стран. Результаты не сохраняются; на телефоне кэшируется только публичный список выходных узлов Tor, чтобы ускорить проверку Tor.</string>
     <string name="sx_sec_score">баллы</string>
     <string name="sx_sec_pass">Защищено</string>
     <string name="sx_sec_warn">Проверьте</string>

@@ -412,7 +412,7 @@
     <string name="sx_sec_weak">Your connection needs attention</string>
     <string name="sx_sec_fixes">How to improve</string>
     <string name="sx_sec_run_again">Run check again</string>
-    <string name="sx_sec_footer">The check asks public services (ip.sb, ip-api.com, ipify) what they see, through the tunnel and once without it to compare countries. Nothing is stored.</string>
+    <string name="sx_sec_footer">The check asks public services (ip.sb, ip-api.com, ipify) what they see, through the tunnel and once without it to compare countries. Results are not saved; only the public Tor exit list is cached on this phone to speed up the Tor check.</string>
     <string name="sx_sec_score">score</string>
     <string name="sx_sec_pass">Protected</string>
     <string name="sx_sec_warn">Check</string>

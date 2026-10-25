@@ -42,64 +42,10 @@ object ApkUpdateCache {
             onProgress(Progress(dest.length(), dest.length()))
             return@withContext dest
         }
-        val tmp = File(dest.absolutePath + ".part")
-        if (HubNet.isHub(url)) {
-            val req = okhttp3.Request.Builder().url(url)
-                .header("User-Agent", "${BuildConfig.APPLICATION_ID}/${BuildConfig.VERSION_NAME}").build()
-            HubNet.client.newCall(req).execute().use { r ->
-                if (!r.isSuccessful) error("HTTP ${r.code}")
-                val total = r.body.contentLength().takeIf { it > 0 }
-                r.body.byteStream().use { input ->
-                    tmp.outputStream().use { output ->
-                        val buf = ByteArray(64 * 1024)
-                        var got = 0L
-                        while (true) {
-                            val n = input.read(buf)
-                            if (n <= 0) break
-                            output.write(buf, 0, n); got += n
-                            onProgress(Progress(got, total))
-                        }
-                    }
-                }
-            }
-            if (dest.exists()) dest.delete()
-            if (!tmp.renameTo(dest)) error("rename failed")
-            return@withContext dest
-        }
-        val conn = (URL(url).openConnection() as HttpURLConnection).apply {
-            connectTimeout = 15_000
-            readTimeout = 60_000
-            instanceFollowRedirects = true
-            setRequestProperty("User-Agent", "${BuildConfig.APPLICATION_ID}/${BuildConfig.VERSION_NAME}")
-        }
-        try {
-            conn.connect()
-            if (conn.responseCode !in 200..299) {
-                error("HTTP ${conn.responseCode}")
-            }
-            val total = conn.contentLengthLong.takeIf { it > 0 }
-            conn.inputStream.use { input ->
-                tmp.outputStream().use { output ->
-                    val buf = ByteArray(64 * 1024)
-                    var got = 0L
-                    while (true) {
-                        val n = input.read(buf)
-                        if (n <= 0) break
-                        output.write(buf, 0, n)
-                        got += n
-                        onProgress(Progress(got, total))
-                    }
-                }
-            }
-            if (dest.exists()) dest.delete()
-            if (!tmp.renameTo(dest)) {
-                tmp.copyTo(dest, overwrite = true)
-                tmp.delete()
-            }
-            dest
-        } finally {
-            conn.disconnect()
-        }
+        val name = url.substringAfterLast('/').substringBefore('?')
+        val github = "https://github.com/gitsatra/SatraNG/releases/download/v${version.removePrefix("v")}/$name"
+        SmartDownloader.download(url, dest, listOf(github),
+            verify = { it.length() > 1_000_000L }) { got, total -> onProgress(Progress(got, total)) }
     }
 
     fun installIntent(context: Context, apk: File): Intent {

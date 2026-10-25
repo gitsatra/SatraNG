@@ -34,5 +34,11 @@
     <string name="ch_ads">Реклама и трекеры заблокированы</string>
     <string name="ch_probe_slow">Меньше фоновых проверок</string>
     <string name="ch_none">Без изменений</string>
-    <string name="notif_mode_action">Режим: %1$s</string>
+    <string name="notif_mode_action">Сменить режим</string>
+    <string name="mode_change">Сменить</string>
+    <string name="mode_back_normal">Обычный</string>
+    <string name="mode_pick_title">Выберите режим</string>
+    <string name="mode_pick_hint">Нажмите на режим, чтобы увидеть, что он меняет. Ничего не изменится, пока вы не нажмёте «Включить».</string>
+    <string name="mode_current">Включён</string>
+    <string name="mode_turn_on">Включить: %1$s</string>
 </resources>

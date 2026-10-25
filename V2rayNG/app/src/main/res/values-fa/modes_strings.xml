@@ -34,5 +34,11 @@
     <string name="ch_ads">تبلیغات و ردیاب‌ها مسدود</string>
     <string name="ch_probe_slow">آزمایش پس‌زمینهٔ کمتر</string>
     <string name="ch_none">بدون تغییر</string>
-    <string name="notif_mode_action">حالت: %1$s</string>
+    <string name="notif_mode_action">تغییر حالت</string>
+    <string name="mode_change">تغییر</string>
+    <string name="mode_back_normal">عادی</string>
+    <string name="mode_pick_title">انتخاب حالت</string>
+    <string name="mode_pick_hint">روی هر حالت بزنید تا ببینید چه چیزی را تغییر می‌دهد. تا «روشن کن» را نزنید چیزی عوض نمی‌شود.</string>
+    <string name="mode_current">فعال است</string>
+    <string name="mode_turn_on">روشن کردن %1$s</string>
 </resources>

@@ -14,8 +14,8 @@ android {
         minSdk = 24
         // 35 = current stable Play target; 37 (canary) made sideload/Play Protect look more "unknown".
         targetSdk = 35
-        versionCode = 777
-        versionName = "2.7.1"
+        versionCode = 780
+        versionName = "2.8.0"
 
         val abiFilterList = (properties["ABI_FILTERS"] as? String)?.split(';')
         splits {

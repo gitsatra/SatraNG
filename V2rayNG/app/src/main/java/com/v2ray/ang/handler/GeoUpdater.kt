@@ -145,12 +145,8 @@ object GeoUpdater {
         _phase.value = Phase.Checking
         val repo = currentRepo()
         try {
-            val json = viaProxyThenDirect { p ->
-                open("https://api.github.com/repos/$repo/releases/latest", p).run {
-                    setRequestProperty("Accept", "application/vnd.github+json")
-                    try { inputStream.bufferedReader().readText() } finally { disconnect() }
-                }
-            }
+            val json = SmartDownloader.getText("https://api.github.com/repos/$repo/releases/latest",
+                headers = mapOf("Accept" to "application/vnd.github+json")) ?: error("unreachable")
             val r = parseRelease(repo, json) ?: error("bad release")
             MmkvManager.encodeSettings(PREF_LATEST, r.tag)
             MmkvManager.encodeSettings(PREF_CHECKED, System.currentTimeMillis().toString())
@@ -176,20 +172,9 @@ object GeoUpdater {
             for (name in FILES) {
                 val (url, size) = r.assets.getValue(name)
                 val tmp = File(d, "$name.dl")
-                viaProxyThenDirect { p ->
-                    val c = open(url, p)
-                    try {
-                        c.inputStream.use { input ->
-                            tmp.outputStream().use { out ->
-                                val buf = ByteArray(64 * 1024); var done = 0L; var last = 0L
-                                while (true) {
-                                    val n = input.read(buf); if (n < 0) break
-                                    out.write(buf, 0, n); done += n
-                                    if (done - last > 256 * 1024 || done == size) { last = done; _phase.value = Phase.Downloading(name, done, size) }
-                                }
-                            }
-                        }
-                    } finally { c.disconnect() }
+                var lastUi = 0L
+                SmartDownloader.download(url, tmp, verify = { it.length() == size }) { done, _ ->
+                    if (done - lastUi > 256 * 1024 || done == size) { lastUi = done; _phase.value = Phase.Downloading(name, done, size) }
                 }
                 if (tmp.length() != size) error("$name: size ${tmp.length()} != $size")
                 val prefix = if (name == AppConfig.GEOIP_DAT) "geoip" else "geosite"

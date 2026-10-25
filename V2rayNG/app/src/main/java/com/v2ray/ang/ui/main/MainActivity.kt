@@ -124,6 +124,7 @@ class MainActivity : HelperBaseComponentActivity(), AppNav {
         val keepUntil = SystemClock.elapsedRealtime() + 220L
         splash.setKeepOnScreenCondition { SystemClock.elapsedRealtime() < keepUntil }
         super.onCreate(savedInstanceState)
+        handleModeIntent(intent)
         mainViewModel.onAction(MainAction.Initialize)
 
         checkAndRequestPermission(PermissionType.POST_NOTIFICATIONS) {}
@@ -162,6 +163,7 @@ class MainActivity : HelperBaseComponentActivity(), AppNav {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        handleModeIntent(intent)
         setIntent(intent)
         applyOpenTab(intent)
     }
@@ -191,6 +193,13 @@ class MainActivity : HelperBaseComponentActivity(), AppNav {
         super.onStop()
         // The selected config may have changed: keep the widget/tile label in step.
         com.v2ray.ang.core.ToggleSurfaces.refresh(applicationContext, mainViewModel.uiState.value.isRunning)
+    }
+
+    private fun handleModeIntent(i: Intent?) {
+        if (i?.getBooleanExtra(com.v2ray.ang.handler.NotificationManager.EXTRA_OPEN_MODES, false) == true) {
+            i.removeExtra(com.v2ray.ang.handler.NotificationManager.EXTRA_OPEN_MODES)
+            com.v2ray.ang.ui.home.ModeSheetRequest.open.value = true
+        }
     }
 
     override fun onResume() {

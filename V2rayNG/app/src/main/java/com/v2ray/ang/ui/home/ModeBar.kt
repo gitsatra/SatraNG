@@ -25,6 +25,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.foundation.border
+import androidx.compose.animation.animateContentSize
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -61,57 +65,118 @@ internal fun modeIcon(m: Mode): ImageVector = when (m) {
     Mode.ECO -> SatraIcons.Heart
 }
 
+/** Set (e.g. from the notification's "Change mode") to open the picker sheet on Home. */
+object ModeSheetRequest { val open = kotlinx.coroutines.flow.MutableStateFlow(false) }
+
 /**
- * Home mode picker: one calm capsule of six segments. Picking a mode plays a short reveal of
- * what it changes (ticks appear one by one), then the line "<Mode> mode is on" stays above.
+ * Home mode row: shows the current mode only. Nothing is switched from Home by a stray touch:
+ * tapping opens a sheet where a mode is first previewed (what it changes) and only a deliberate
+ * "Turn on" applies it. "Back to Normal" is the one-tap undo.
  */
 @Composable
 internal fun ModeBar(current: Mode, onPick: (Mode) -> Unit, modifier: Modifier = Modifier) {
     val c = Satra.colors
-    var reveal by remember { mutableIntStateOf(-1) } // ordinal being revealed, -1 = none
-    Column(modifier.fillMaxWidth()) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.mode_title), style = Satra.type.caption.copy(fontWeight = FontWeight.SemiBold), color = c.textSecondary)
-            Spacer(Modifier.weight(1f))
-            val name = stringResource(current.title)
+    var reveal by remember { mutableIntStateOf(-1) }
+    val req by ModeSheetRequest.open.collectAsState()
+    var sheet by remember { mutableStateOf(false) }
+    LaunchedEffect(req) { if (req) { sheet = true; ModeSheetRequest.open.value = false } }
+    val on = current != Mode.NORMAL
+    Row(
+        modifier.fillMaxWidth().height(60.dp).clip(SatraShapes.Large).background(c.surface)
+            .semantics(mergeDescendants = true) { role = Role.Button }
+            .satraClickable(pressedScale = 0.98f) { sheet = true }
+            .padding(start = 14.dp, end = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.size(34.dp).clip(CircleShape).background(if (on) c.accent.copy(alpha = 0.16f) else c.fill), contentAlignment = Alignment.Center) {
+            Icon(modeIcon(current), null, tint = if (on) c.accent else c.textSecondary, modifier = Modifier.size(18.dp))
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(stringResource(R.string.mode_title), style = Satra.type.caption, color = c.textTertiary)
             Text(
-                if (current == Mode.NORMAL) stringResource(current.desc) else stringResource(R.string.mode_on, name),
-                style = Satra.type.caption.copy(fontWeight = if (current == Mode.NORMAL) FontWeight.Normal else FontWeight.SemiBold),
-                color = if (current == Mode.NORMAL) c.textTertiary else c.accent,
+                if (on) stringResource(R.string.mode_on, stringResource(current.title)) else stringResource(current.title),
+                style = Satra.type.subhead.copy(fontWeight = FontWeight.SemiBold), color = if (on) c.accent else c.textPrimary,
                 maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
         }
-        Row(
-            Modifier.fillMaxWidth().clip(SatraShapes.Large).background(c.surface).padding(4.dp),
-            horizontalArrangement = Arrangement.spacedBy(2.dp),
+        if (on) {
+            Text(
+                stringResource(R.string.mode_back_normal), style = Satra.type.footnote.copy(fontWeight = FontWeight.SemiBold), color = c.textPrimary,
+                modifier = Modifier.clip(SatraShapes.Pill).background(c.fill).satraClickable { onPick(Mode.NORMAL); reveal = Mode.NORMAL.ordinal }
+                    .padding(horizontal = 14.dp, vertical = 9.dp),
+            )
+            Spacer(Modifier.width(6.dp))
+        }
+        Text(
+            stringResource(R.string.mode_change), style = Satra.type.footnote.copy(fontWeight = FontWeight.SemiBold), color = c.accent,
+            modifier = Modifier.clip(SatraShapes.Pill).background(c.accent.copy(alpha = 0.12f)).padding(horizontal = 14.dp, vertical = 9.dp),
+        )
+    }
+    if (sheet) ModeSheet(current, onDismiss = { sheet = false }) { m -> sheet = false; onPick(m); reveal = m.ordinal }
+    if (reveal >= 0) ModeReveal(Mode.entries[reveal]) { reveal = -1 }
+}
+
+/** Picker: tap = preview only (highlight + what changes). Applying needs the "Turn on" button. */
+@Composable
+private fun ModeSheet(current: Mode, onDismiss: () -> Unit, onApply: (Mode) -> Unit) {
+    val c = Satra.colors
+    var sel by remember { mutableStateOf(current) }
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss, properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
+        Column(
+            Modifier.padding(16.dp).fillMaxWidth().clip(SatraShapes.XLarge).background(c.surfaceRaised).padding(18.dp),
         ) {
-            Mode.entries.forEach { m ->
-                val sel = m == current
-                val bg by animateColorAsState(if (sel) c.accent.copy(alpha = 0.16f) else c.surface, tween(260), label = "modeBg")
-                val fg by animateColorAsState(if (sel) c.accent else c.textSecondary, tween(260), label = "modeFg")
-                val label = stringResource(m.title)
-                Column(
-                    Modifier.weight(1f).clip(SatraShapes.Medium).background(bg)
-                        .semantics(mergeDescendants = true) { selected = sel; role = Role.RadioButton }
-                        .satraClickable { if (!sel) { onPick(m); reveal = m.ordinal } }
-                        .padding(vertical = 6.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Icon(modeIcon(m), null, tint = fg, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.height(2.dp))
-                    var scale by remember(label) { androidx.compose.runtime.mutableFloatStateOf(1f) }
-                    val base = Satra.type.caption
-                    Text(
-                        label, style = base.copy(fontSize = base.fontSize * scale), color = fg, maxLines = 1, softWrap = false,
-                        textAlign = TextAlign.Center,
-                        onTextLayout = { if (it.hasVisualOverflow && scale > 0.7f) scale *= 0.92f },
-                    )
+            Text(stringResource(R.string.mode_pick_title), style = Satra.type.title2, color = c.textPrimary)
+            Text(stringResource(R.string.mode_pick_hint), style = Satra.type.footnote, color = c.textSecondary)
+            Spacer(Modifier.height(12.dp))
+            // Two columns of large, well-spaced tiles.
+            Mode.entries.chunked(2).forEach { pair ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    pair.forEach { m ->
+                        val isSel = m == sel
+                        val bg by animateColorAsState(if (isSel) c.accent.copy(alpha = 0.14f) else c.fill, tween(200), label = "tile")
+                        Row(
+                            Modifier.weight(1f).height(58.dp).clip(SatraShapes.Medium).background(bg)
+                                .then(if (isSel) Modifier.border(1.5.dp, c.accent, SatraShapes.Medium) else Modifier)
+                                .semantics(mergeDescendants = true) { selected = isSel; role = Role.RadioButton }
+                                .satraClickable(pressedScale = 0.97f) { sel = m }
+                                .padding(horizontal = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(modeIcon(m), null, tint = if (isSel) c.accent else c.textSecondary, modifier = Modifier.size(20.dp))
+                            Spacer(Modifier.width(10.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(stringResource(m.title), style = Satra.type.subhead.copy(fontWeight = FontWeight.SemiBold),
+                                    color = if (isSel) c.accent else c.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                if (m == current) Text(stringResource(R.string.mode_current), style = Satra.type.caption, color = c.success)
+                            }
+                        }
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
+            }
+            // Preview of the selected mode.
+            Column(Modifier.fillMaxWidth().clip(SatraShapes.Medium).background(c.fill).padding(14.dp).animateContentSize(tween(220))) {
+                Text(stringResource(sel.desc), style = Satra.type.footnote, color = c.textSecondary)
+                val changes = remember(sel) { ModeEngine.changes(sel) }
+                changes.forEach { ch ->
+                    Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(6.dp).clip(CircleShape).background(c.accent))
+                        Spacer(Modifier.width(10.dp))
+                        Text(if (ch.arg != null) stringResource(ch.label, ch.arg) else stringResource(ch.label), style = Satra.type.subhead, color = c.textPrimary)
+                    }
                 }
             }
+            Spacer(Modifier.height(14.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                com.v2ray.ang.ui.compose.satra.SatraButton(stringResource(android.R.string.cancel), onClick = onDismiss,
+                    modifier = Modifier.weight(1f), style = com.v2ray.ang.ui.compose.satra.SatraButtonStyle.Tinted)
+                com.v2ray.ang.ui.compose.satra.SatraButton(
+                    if (sel == current) stringResource(R.string.mode_current) else stringResource(R.string.mode_turn_on, stringResource(sel.title)),
+                    onClick = { onApply(sel) }, enabled = sel != current, modifier = Modifier.weight(1.4f),
+                )
+            }
         }
-    }
-    if (reveal >= 0) {
-        ModeReveal(Mode.entries[reveal]) { reveal = -1 }
     }
 }
 

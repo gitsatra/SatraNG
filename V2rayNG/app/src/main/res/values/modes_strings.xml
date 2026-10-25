@@ -34,5 +34,11 @@
     <string name="ch_ads">Ads and trackers blocked</string>
     <string name="ch_probe_slow">Fewer background probes</string>
     <string name="ch_none">No changes</string>
-    <string name="notif_mode_action">Mode: %1$s</string>
+    <string name="notif_mode_action">Change mode</string>
+    <string name="mode_change">Change</string>
+    <string name="mode_back_normal">Normal</string>
+    <string name="mode_pick_title">Choose a mode</string>
+    <string name="mode_pick_hint">Tap a mode to see what it changes. Nothing changes until you tap Turn on.</string>
+    <string name="mode_current">On now</string>
+    <string name="mode_turn_on">Turn on %1$s</string>
 </resources>

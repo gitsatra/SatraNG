@@ -28,6 +28,7 @@ import kotlinx.coroutines.launch
 import kotlin.math.min
 
 object NotificationManager {
+    const val EXTRA_OPEN_MODES = "satra.open_modes"
     private const val NOTIFICATION_ID = 1
     private const val NOTIFICATION_PENDING_INTENT_CONTENT = 0
     private const val NOTIFICATION_PENDING_INTENT_STOP_V2RAY = 1
@@ -127,18 +128,13 @@ object NotificationManager {
                 stopV2RayPendingIntent
             )
         }
-        // Mode: one compact action that cycles Normal → Game → Secure (labels in the app language).
-        val modeIntent = Intent(AppConfig.BROADCAST_ACTION_SERVICE)
-        modeIntent.`package` = AppConfig.ANG_PACKAGE
-        modeIntent.putExtra("key", AppConfig.MSG_SET_MODE)
-        modeIntent.putExtra("content", "cycle")
-        val modePendingIntent = PendingIntent.getBroadcast(service, NOTIFICATION_PENDING_INTENT_STOP_V2RAY + 40, modeIntent, flags)
+        // Mode: opens the in-app picker (preview + explicit "Turn on"), so a stray tap never switches modes.
+        val modeIntent = Intent(service, com.v2ray.ang.ui.main.MainActivity::class.java)
+            .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            .putExtra(EXTRA_OPEN_MODES, true)
+        val modePendingIntent = PendingIntent.getActivity(service, NOTIFICATION_PENDING_INTENT_STOP_V2RAY + 40, modeIntent, flags)
         val mode = ModeEngine.read()
-        mBuilder?.addAction(
-            R.drawable.ic_notif_satra,
-            res.getString(R.string.notif_mode_action, res.getString(mode.title)),
-            modePendingIntent
-        )
+        mBuilder?.addAction(R.drawable.ic_notif_satra, res.getString(R.string.notif_mode_action), modePendingIntent)
         if (mode != ModeEngine.Mode.NORMAL) {
             mBuilder?.setSubText(res.getString(R.string.mode_on, res.getString(mode.title)))
         }

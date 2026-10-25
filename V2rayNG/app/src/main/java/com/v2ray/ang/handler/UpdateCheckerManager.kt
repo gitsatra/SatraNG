@@ -17,15 +17,7 @@ object UpdateCheckerManager {
     /** Satra Hub first (domain, then direct IP); public GitHub gitsatra/SatraNG releases are the fallback. latest.json: {version, files:{name:{url,size,sha256}}}. */
     const val HUB_ANDROID = "https://p.iivt.ir:2097/satra/dl/android/"
 
-    private fun fetch(url: String): String? =
-        (if (HubNet.isHub(url)) HubNet.getText(url) else null)
-            ?: HttpUtil.getUrlContent(UrlContentRequest(url = url, timeout = 6000)).takeUnless { it.isNullOrEmpty() }
-            ?: HttpUtil.getUrlContent(
-                UrlContentRequest(
-                    url = url, timeout = 8000, httpPort = SettingsManager.getHttpPort(),
-                    proxyUsername = SettingsManager.getSocksUsername(), proxyPassword = SettingsManager.getSocksPassword(),
-                )
-            ).takeUnless { it.isNullOrEmpty() }
+    private fun fetch(url: String): String? = SmartDownloader.getText(url)
 
     /** Pure: picks the APK for this ABI / flavor from a Hub latest.json. Unit-testable. */
     internal fun parseHub(json: String, abi: String, fdroid: Boolean): Pair<String, String>? {

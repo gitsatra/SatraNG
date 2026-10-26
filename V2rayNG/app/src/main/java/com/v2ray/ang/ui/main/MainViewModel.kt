@@ -398,6 +398,12 @@ class MainViewModel(
                 MmkvManager.encodeSettings(AppConfig.PREF_USER_REQUESTED_STOP, false)
                 _uiState.update { it.copy(autoReconnecting = false) }
                 refreshExitGeoForSelectedServer()
+                // Fresh latency through the live tunnel, so Home never shows a ping measured
+                // before connecting (or on another network). Short wait lets the core settle.
+                viewModelScope.launch {
+                    delay(POST_CONNECT_PING_DELAY_MS)
+                    if (uiState.value.isRunning && !uiState.value.isTesting) testCurrentServerRealPing()
+                }
             }
 
             is MainServiceEvent.StateStartFailure -> {
@@ -1812,6 +1818,7 @@ class MainViewModel(
     }
 
     private companion object {
+        private const val POST_CONNECT_PING_DELAY_MS = 1_500L
         const val CONNECT_TIMEOUT_MS = 30_000L
         const val DISCONNECT_TIMEOUT_MS = 6_000L
         const val FAILED_SHOWN_MS = 3_600L

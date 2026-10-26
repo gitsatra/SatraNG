@@ -20,6 +20,8 @@ import com.v2ray.ang.enums.BrowserDialerMode
 import com.v2ray.ang.extension.delay
 import com.v2ray.ang.extension.isNotNullEmpty
 import com.v2ray.ang.handler.UsageSampler
+import com.v2ray.ang.handler.InboundSocketReaper
+import com.v2ray.ang.handler.UsageLimitEngine
 import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.handler.NotificationManager
 import com.v2ray.ang.handler.ProcessUidResolver
@@ -226,10 +228,13 @@ object CoreServiceManager {
         if (isRunning()) {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
+                    harvestStatsBeforeStop()
                     coreController.stopLoop()
                 } catch (e: Exception) {
                     LogUtil.e(AppConfig.TAG, "StartCore-Manager: Failed to stop V2Ray loop", e)
                 }
+                // Disconnected: nothing may keep flowing through sessions of the stopped core.
+                runCatching { InboundSocketReaper.reap(service, null) }
             }
         }
 
@@ -292,8 +297,16 @@ object CoreServiceManager {
                 "StartCore-Manager: Core reload start (killSockets=$killSockets)...",
             )
 
+            // Read the counters one last time: whatever moved since the last usage tick would
+            // otherwise vanish with the old instance (and a limit would under-count).
+            harvestStatsBeforeStop()
             coreController.stopLoop()
             ProcessUidResolver.clearCache()
+            // Sessions already accepted on the local HTTP/SOCKS inbound survive a loop restart;
+            // end the ones owned by an app whose limit is used up so the block applies at once.
+            runCatching {
+                InboundSocketReaper.reap(service, UsageLimitEngine.blockedUids(service))
+            }
             // Brief pause so the OS delivers RSTs for lim-*/HTTP-proxy keep-alives before the new
             // loop binds the same local ports. Without this, apps can keep streaming on sockets that
             // were opened under the previous (unblocked) routing. Removal: when stopLoop is proven
@@ -419,11 +432,31 @@ object CoreServiceManager {
      */
     fun queryAllOutboundTrafficStats(): List<OutboundTrafficStat> {
         // The stats manager is gone once the core stops, querying it then reaches into freed state.
-        if (!isRunning() || isReloading) return emptyList()
+        val carried = synchronized(pendingStats) {
+            val copy = ArrayList(pendingStats)
+            pendingStats.clear()
+            copy
+        }
+        if (!isRunning() || isReloading) return carried
+        val result = ArrayList<OutboundTrafficStat>(carried)
+        parseStats(coreController.queryAllOutboundTrafficStats(), result)
+        return result
+    }
 
-        val payload = coreController.queryAllOutboundTrafficStats()
+    /** Counters read right before a stop/reload; handed to the next usage tick. */
+    private val pendingStats = ArrayList<OutboundTrafficStat>()
 
-        val result = ArrayList<OutboundTrafficStat>()
+    private fun harvestStatsBeforeStop() {
+        if (!isRunning()) return
+        runCatching {
+            val out = ArrayList<OutboundTrafficStat>()
+            parseStats(coreController.queryAllOutboundTrafficStats(), out)
+            if (out.isNotEmpty()) synchronized(pendingStats) { pendingStats.addAll(out) }
+        }
+    }
+
+    private fun parseStats(payload: String?, result: MutableList<OutboundTrafficStat>) {
+        if (payload.isNullOrEmpty()) return
 
         payload.split(';').forEach { entry ->
             if (entry.isBlank()) return@forEach
@@ -441,8 +474,6 @@ object CoreServiceManager {
                 )
             )
         }
-//        LogUtil.d(AppConfig.TAG, "Queried outbound traffic stats: $result")
-        return result
     }
 
     /**

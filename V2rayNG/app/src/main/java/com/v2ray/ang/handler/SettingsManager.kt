@@ -41,6 +41,7 @@ object SettingsManager {
         ensureDefaultSettings()
         migrateLegacyLocalPorts()
         seedSatraTunnelDefaults()
+        migrateAppendHttpProxyLanSafe()
         migrateToXrayEngine()
         migrateSubscriptionAutoUpdate()
         //ensureDefaultSubscription()
@@ -521,6 +522,27 @@ object SettingsManager {
             MmkvManager.encodeSettings(key, default)
         }
     }
+
+    /**
+     * One-time, version-gated fix for installs that shipped with the VPN-wide HTTP proxy on.
+     *
+     * A VPN-wide HTTP proxy makes proxy-aware apps send their plain HTTP (and LAN `ws://`)
+     * traffic to the local sing-box HTTP inbound, which re-issues requests without their
+     * `Upgrade` header: LAN WebSockets then answer 400 instead of 101 whenever the VPN is up.
+     * Existing installs already carry `pref_append_http_proxy=true` in MMKV, so only a
+     * migration (not a new default) can repair them without a manual tap. Runs exactly once;
+     * a user who later turns the switch back on keeps it on.
+     */
+    private fun migrateAppendHttpProxyLanSafe() {
+        if (MmkvManager.decodeSettingsBool(PREF_APPEND_HTTP_PROXY_LAN_SAFE_MIGRATED, false)) {
+            return
+        }
+        MmkvManager.encodeSettings(AppConfig.PREF_APPEND_HTTP_PROXY, false)
+        MmkvManager.encodeSettings(PREF_APPEND_HTTP_PROXY_LAN_SAFE_MIGRATED, true)
+        LogUtil.i(AppConfig.TAG, "SettingsManager: VPN-wide HTTP proxy disabled (LAN/WebSocket fix)")
+    }
+
+    private const val PREF_APPEND_HTTP_PROXY_LAN_SAFE_MIGRATED = "pref_satra_append_http_proxy_lan_safe_v1"
 
     /**
      * Replace stock v2rayNG local ports (10808/10853) with SatraNG defaults once.

@@ -290,7 +290,20 @@ class CoreVpnService : VpnService(), ServiceControl {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             builder.setMetered(false)
             if (MmkvManager.decodeSettingsBool(AppConfig.PREF_APPEND_HTTP_PROXY, AppConfig.DEFAULT_APPEND_HTTP_PROXY)) {
-                builder.setHttpProxy(ProxyInfo.buildDirectProxy(LOOPBACK, SettingsManager.getHttpPort()))
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    // Never proxy private/loopback destinations. The local HTTP inbound re-issues
+                    // plain HTTP requests and drops their `Upgrade` header, so proxying a LAN
+                    // `ws://` peer answers 400 instead of 101 even though the VPN routes that
+                    // network itself. The list reaches clients as `http.nonProxyHosts`, so
+                    // ProxySelector-based HTTP stacks connect to LAN hosts directly.
+                    builder.setHttpProxy(
+                        ProxyInfo.buildDirectProxy(LOOPBACK, SettingsManager.getHttpPort(), VPN_HTTP_PROXY_EXCLUSIONS)
+                    )
+                } else {
+                    // ProxyInfo had no exclusion list before Android 11; the pref is off by
+                    // default there, so a VPN-wide proxy is only ever applied on explicit opt-in.
+                    builder.setHttpProxy(ProxyInfo.buildDirectProxy(LOOPBACK, SettingsManager.getHttpPort()))
+                }
             }
         }
     }
@@ -431,5 +444,27 @@ class CoreVpnService : VpnService(), ServiceControl {
     fun unlockStart() {
         isStartingLock.set(false)
         LogUtil.w(AppConfig.TAG, "StartCore-VPN: unlockStart")
+    }
+
+    private companion object {
+        /**
+         * Destinations that must never be sent through the opt-in VPN-wide HTTP proxy.
+         *
+         * The local HTTP inbound (sing-box `http` inbound on [LOOPBACK]) re-issues plain HTTP
+         * requests instead of tunnelling them verbatim, so the `Upgrade` header of a LAN
+         * `ws://` peer is lost and the handshake fails with 400 Bad Request. Those networks are
+         * already carried by the VPN route table / LAN bypass, so excluding them from the proxy
+         * costs nothing and keeps LAN, loopback and mDNS traffic working. Delivered to apps as
+         * `http.nonProxyHosts` by the platform proxy selector.
+         */
+        val VPN_HTTP_PROXY_EXCLUSIONS: List<String> = buildList {
+            add("localhost")
+            add("127.*")
+            add("10.*")
+            add("192.168.*")
+            add("169.254.*")
+            add("*.local")
+            for (second in 16..31) add("172.$second.*")
+        }
     }
 }

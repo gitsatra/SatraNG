@@ -197,7 +197,15 @@ object AppConfig {
      */
     @JvmField
     val DEFAULT_USE_HEV_TUNNEL = android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.Q
-    const val DEFAULT_APPEND_HTTP_PROXY = true
+    /**
+     * Off by default: a VPN-wide HTTP proxy makes supported apps talk to the local sing-box HTTP
+     * inbound instead of the virtual interface, and that inbound re-issues plain HTTP requests
+     * without their `Upgrade` header — so every plain `ws://` (LAN relays, dev servers, Home
+     * Assistant, ...) fails with 400 Bad Request while the VPN is up. Opt in from Settings when a
+     * proxy-aware app needs it; even then LAN/loopback destinations are excluded (see
+     * [com.v2ray.ang.service.CoreVpnService.VPN_HTTP_PROXY_EXCLUSIONS]).
+     */
+    const val DEFAULT_APPEND_HTTP_PROXY = false
     const val DEFAULT_IPV6_ENABLED = true
     const val DEFAULT_OUTBOUND_DOMAIN_RESOLVE_METHOD = "1"
     const val DEFAULT_VPN_BYPASS_LAN = "1"
